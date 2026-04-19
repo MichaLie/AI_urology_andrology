@@ -1,0 +1,6 @@
+anthropic
+biopython
+certifi
+matplotlib
+pandas
+pillow

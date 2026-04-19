@@ -1,0 +1,15 @@
+{
+  "pubmed_hits_across_queries": 8941,
+  "query_union_unique_records": 7264,
+  "pre_screen_relevance_exclusions": 1341,
+  "records_for_ai_screening": 5923,
+  "ai_include": 3331,
+  "ai_exclude": 2202,
+  "ai_uncertain": 390,
+  "human_reviewed_rows_total": 1087,
+  "human_dual_review_rows": 648,
+  "human_dual_review_adjudication_rows": 14,
+  "human_exclude_audit_rows": 439,
+  "included_after_consensus": 3450,
+  "final_included_records": 3425
+}
