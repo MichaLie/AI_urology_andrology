@@ -11,6 +11,8 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 TABLE_PATH = ROOT / "data" / "readiness_matrix.csv"
 FIG_DIR = ROOT / "figures"
+SOURCE_DATA_DIR = ROOT / "source_data"
+SOURCE_DATA_PATH = SOURCE_DATA_DIR / "Figure2_readiness_map_source_data.csv"
 
 
 COLOR_MAP = {
@@ -103,7 +105,9 @@ def add_label(ax, x: float, y: float, spec: dict) -> None:
 
 def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
+    SOURCE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     df = pd.read_csv(TABLE_PATH)
+    df.to_csv(SOURCE_DATA_PATH, index=False)
     plot_df = build_plot_frame(df)
 
     fig, ax = plt.subplots(figsize=(13, 7.5))
@@ -169,8 +173,8 @@ def main() -> None:
     ax.spines["bottom"].set_linewidth(1.1)
 
     fig.subplots_adjust(left=0.10, right=0.98, bottom=0.10, top=0.90)
-    png_path = FIG_DIR / "readiness_map.png"
-    pdf_path = FIG_DIR / "readiness_map.pdf"
+    png_path = FIG_DIR / "Figure2_readiness_map.png"
+    pdf_path = FIG_DIR / "Figure2_readiness_map.pdf"
     fig.savefig(png_path, dpi=300, bbox_inches="tight")
     fig.savefig(pdf_path, bbox_inches="tight")
     plt.close(fig)

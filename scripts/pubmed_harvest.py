@@ -239,7 +239,7 @@ def parse_record(record: dict) -> dict:
 
 
 def load_existing_references(csv_path: str) -> dict:
-    """Load existing reference list and return DOI -> info mapping."""
+    """Load an optional prior reference list and return DOI -> info mapping."""
     existing = {}
     try:
         df = pd.read_csv(csv_path)
@@ -248,7 +248,7 @@ def load_existing_references(csv_path: str) -> dict:
             if doi and doi != "nan":
                 existing[doi] = {
                     "filename": str(row.get("Filename", "")),
-                    "in_manuscript": str(row.get("In_Manuscript", "No")),
+                    "in_reference_set": str(row.get("In_Reference_Set", "No")),
                     "pdf_available": str(row.get("PDF_Available", "No")),
                 }
     except FileNotFoundError:
@@ -262,7 +262,7 @@ def main():
     )
     parser.add_argument(
         "--email",
-        default="reviewer@example.com",
+        required=True,
         help="Email for NCBI Entrez (required by NCBI policy)",
     )
     parser.add_argument(
@@ -350,11 +350,11 @@ def main():
         if doi_lower in existing_refs:
             ref_info = existing_refs[doi_lower]
             parsed["Already_Collected"] = "Yes"
-            parsed["Already_Cited"] = ref_info["in_manuscript"]
+            parsed["Already_In_Reference_Set"] = ref_info["in_reference_set"]
             parsed["Existing_Filename"] = ref_info["filename"]
         else:
             parsed["Already_Collected"] = "No"
-            parsed["Already_Cited"] = "No"
+            parsed["Already_In_Reference_Set"] = "No"
             parsed["Existing_Filename"] = ""
 
         # Screening columns (to be filled by AI/human)
@@ -368,10 +368,10 @@ def main():
 
         rows.append(parsed)
 
-    # Sort: already-cited first, then already-collected, then by domain hits desc
+    # Sort: prior-reference records first, then already-collected records, then by domain hits desc.
     rows.sort(
         key=lambda r: (
-            r["Already_Cited"] != "No",
+            r["Already_In_Reference_Set"] != "No",
             r["Already_Collected"] == "Yes",
             r["Num_Domain_Hits"],
         ),
@@ -384,7 +384,7 @@ def main():
             "PMID", "DOI", "First_Author", "Year", "Title", "Abstract",
             "Journal", "Journal_Abbrev", "Publication_Type", "MeSH_Terms",
             "Authors_All", "Domain_Searches", "Num_Domain_Hits",
-            "Already_Collected", "Already_Cited", "Existing_Filename",
+            "Already_Collected", "Already_In_Reference_Set", "Existing_Filename",
             "AI_Decision", "AI_Reasoning", "AI_Confidence",
             "Human_Decision", "Human_Reasoning",
             "Final_Decision", "Exclusion_Reason",
@@ -417,17 +417,17 @@ def main():
 
         # Cross-reference stats
         already_collected = sum(1 for r in rows if r["Already_Collected"] == "Yes")
-        already_cited = sum(1 for r in rows if r["Already_Cited"] != "No")
+        already_in_reference_set = sum(1 for r in rows if r["Already_In_Reference_Set"] != "No")
         f.write(f"Cross-reference with existing collection:\n")
         f.write(f"  Already collected: {already_collected}\n")
-        f.write(f"  Already cited in manuscript: {already_cited}\n")
+        f.write(f"  Already in prior reference set: {already_in_reference_set}\n")
         f.write(f"  New (not in collection): {len(rows) - already_collected}\n")
 
     print(f"Written harvest log to {log_path}")
 
     # Summary
     already_collected = sum(1 for r in rows if r["Already_Collected"] == "Yes")
-    already_cited = sum(1 for r in rows if r["Already_Cited"] != "No")
+    already_in_reference_set = sum(1 for r in rows if r["Already_In_Reference_Set"] != "No")
     print()
     print("=" * 70)
     print("SUMMARY")
@@ -435,7 +435,7 @@ def main():
     print(f"  Domains searched:          {len(DOMAIN_QUERIES)}")
     print(f"  Unique records:            {len(rows)}")
     print(f"  Already in collection:     {already_collected}")
-    print(f"  Already cited in MS:       {already_cited}")
+    print(f"  Already in reference set:  {already_in_reference_set}")
     print(f"  New records to screen:     {len(rows) - already_collected}")
     print()
     print(f"Output: {output_csv}")

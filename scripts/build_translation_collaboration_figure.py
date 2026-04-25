@@ -63,8 +63,8 @@ def main() -> None:
 
     fig.subplots_adjust(left=0.03, right=0.97, top=0.98, bottom=0.02, hspace=0.14)
 
-    png_path = FIG_DIR / "translation_and_collaboration_models.png"
-    pdf_path = FIG_DIR / "translation_and_collaboration_models.pdf"
+    png_path = FIG_DIR / "Figure3_translation_and_collaboration_models.png"
+    pdf_path = FIG_DIR / "Figure3_translation_and_collaboration_models.pdf"
     fig.savefig(png_path, dpi=300, bbox_inches="tight", facecolor="white")
     fig.savefig(pdf_path, bbox_inches="tight", facecolor="white")
     plt.close(fig)

@@ -10,7 +10,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 DATA_IN = ROOT / "data" / "included_records.csv"
 DATA_OUT_DIR = ROOT / "data"
+SOURCE_DATA_DIR = ROOT / "source_data"
 FIG_OUT_DIR = ROOT / "figures"
+DOMAIN_SOURCE_OUT = SOURCE_DATA_DIR / "Supplementary_Figure_S2_review_paradox_by_domain_source_data.csv"
 
 
 def classify(df: pd.DataFrame) -> pd.DataFrame:
@@ -103,8 +105,8 @@ def make_figure(domain: pd.DataFrame) -> None:
     ax.legend(frameon=False, loc="lower right", fontsize=9)
     fig.tight_layout()
 
-    png = FIG_OUT_DIR / "review_burden_by_domain.png"
-    pdf = FIG_OUT_DIR / "review_burden_by_domain.pdf"
+    png = FIG_OUT_DIR / "Supplementary_Figure_S2_review_paradox_by_domain.png"
+    pdf = FIG_OUT_DIR / "Supplementary_Figure_S2_review_paradox_by_domain.pdf"
     fig.savefig(png, dpi=300, bbox_inches="tight")
     fig.savefig(pdf, bbox_inches="tight")
     plt.close(fig)
@@ -112,6 +114,7 @@ def make_figure(domain: pd.DataFrame) -> None:
 
 def main() -> None:
     DATA_OUT_DIR.mkdir(parents=True, exist_ok=True)
+    SOURCE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     FIG_OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     df = pd.read_csv(DATA_IN)
@@ -120,7 +123,7 @@ def main() -> None:
     domain = build_domain_table(df)
     year = build_year_table(df)
 
-    domain.to_csv(DATA_OUT_DIR / "review_burden_by_domain.csv", index=False)
+    domain.to_csv(DOMAIN_SOURCE_OUT, index=False)
     year.to_csv(DATA_OUT_DIR / "review_burden_by_year.csv", index=False)
 
     make_figure(domain)

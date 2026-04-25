@@ -21,7 +21,7 @@ from anthropic import Anthropic
 
 # ── Screening criteria (from the Methods section) ──────────────────────────
 
-SCREENING_PROMPT = """You are an expert systematic reviewer screening records for a critical scoping review of artificial intelligence in urology and andrology.
+SCREENING_PROMPT = """You are an expert systematic reviewer screening records for a critical scoping review titled "Artificial intelligence in urology and andrology: from benchmark performance to clinical credibility."
 
 ## REVIEW SCOPE
 The review covers AI applications in:
@@ -64,9 +64,9 @@ E9. Performance metrics reported without enough information to understand the cl
 
 ## YOUR TASK
 For each record, classify as:
-- **INCLUDE**: Meets at least one inclusion criterion and no exclusion criteria
-- **EXCLUDE**: Meets at least one exclusion criterion
-- **UNCERTAIN**: Could go either way; needs human review
+- INCLUDE: Meets at least one inclusion criterion and no exclusion criteria
+- EXCLUDE: Meets at least one exclusion criterion
+- UNCERTAIN: Could go either way; needs human review
 
 Respond in exactly this JSON format for each record:
 {
@@ -75,8 +75,7 @@ Respond in exactly this JSON format for each record:
   "inclusion_criteria_met": [list of criterion numbers, e.g. [1, 3]],
   "exclusion_criteria_met": [list of criterion codes, e.g. ["E1"]],
   "reasoning": "Brief 1-2 sentence justification"
-}
-"""
+}"""
 
 BATCH_USER_TEMPLATE = """Screen the following {n} records. Return a JSON array with one object per record, in the same order. Each object must have the fields: decision, confidence, inclusion_criteria_met, exclusion_criteria_met, reasoning.
 

@@ -10,7 +10,8 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 DATA_PATH = ROOT / "data" / "included_records.csv"
 FIG_DIR = ROOT / "figures"
-OUT_TABLE = ROOT / "data" / "publication_trends_by_domain.csv"
+SOURCE_DATA_DIR = ROOT / "source_data"
+OUT_TABLE = SOURCE_DATA_DIR / "Supplementary_Figure_S1_publication_trends_source_data.csv"
 
 COLOR_MAP = {
     "Prostate Imaging": "#2f6db3",
@@ -28,6 +29,7 @@ COLOR_MAP = {
 
 def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
+    SOURCE_DATA_DIR.mkdir(parents=True, exist_ok=True)
     included = pd.read_csv(DATA_PATH)
     trends = (
         included.groupby(["Year", "Domain_Group"])
@@ -130,8 +132,8 @@ def main() -> None:
     ax2.spines["right"].set_visible(False)
 
     fig.tight_layout()
-    png = FIG_DIR / "publication_trends.png"
-    pdf = FIG_DIR / "publication_trends.pdf"
+    png = FIG_DIR / "Supplementary_Figure_S1_publication_trends.png"
+    pdf = FIG_DIR / "Supplementary_Figure_S1_publication_trends.pdf"
     fig.savefig(png, dpi=300, bbox_inches="tight")
     fig.savefig(pdf, bbox_inches="tight")
     plt.close(fig)

@@ -1,0 +1,16 @@
+Metric_Key,Metric_Label,Value
+pubmed_hits_across_queries,PubMed hits across queries,8941
+query_union_unique_records,Unique records after deduplication,7264
+pre_screen_relevance_exclusions,Prescreen relevance exclusions,1341
+unique_records_screened,Records screened,5923
+ai_include,AI include,3331
+ai_exclude,AI exclude,2202
+ai_uncertain,AI uncertain,390
+human_dual_review_rows,Dual human review rows,648
+human_exclude_audit_rows,AI-exclude audit rows,439
+ai_only_include_population,AI-only Include population,3053
+ai_only_include_audit_rows,AI-only Include audit rows,305
+included_after_consensus,Included after consensus,3450
+preprints_removed,Preprints removed,19
+stone_scope_removed,Stone-scope records removed,6
+final_included_records,Final included record set,3425

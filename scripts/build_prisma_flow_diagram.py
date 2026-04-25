@@ -13,6 +13,14 @@ ROOT = Path(__file__).resolve().parent.parent
 FIG_DIR = ROOT / "figures"
 SUMMARY_PATH = ROOT / "data" / "screening_counts.json"
 SCREENING_PATH = ROOT / "data" / "screening_database.csv"
+AI_INCLUDE_AUDIT_PATH = ROOT / "data" / "ai_only_include_audit.csv"
+
+
+def first_existing_column(df: pd.DataFrame, *candidates: str) -> str:
+    for candidate in candidates:
+        if candidate in df.columns:
+            return candidate
+    raise KeyError(f"None of these columns are present: {', '.join(candidates)}")
 
 
 def add_box(ax, x: float, y: float, w: float, h: float, text: str, fc: str, *, fs: int = 15, weight: str = "normal") -> None:
@@ -61,12 +69,15 @@ def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
     summary = json.loads(SUMMARY_PATH.read_text(encoding="utf-8"))
     screened = pd.read_csv(SCREENING_PATH)
+    ai_include_audit = pd.read_csv(AI_INCLUDE_AUDIT_PATH) if AI_INCLUDE_AUDIT_PATH.exists() else pd.DataFrame()
 
     dual_mask = screened["Review_Pathway"].isin(
         ["Dual human review", "AI uncertain + dual human review", "Dual human review + adjudication"]
     )
     audit_mask = screened["Review_Pathway"] == "AI exclude + 20% human audit"
-    cleanup_notes = screened["Postscreen_Exclusion_Note"].fillna("")
+    analytic_col = first_existing_column(screened, "Analytic_Set_Decision")
+    cleanup_col = first_existing_column(screened, "Eligibility_Cleanup_Reason")
+    cleanup_notes = screened[cleanup_col].fillna("")
 
     ai_include = int((screened["AI_Decision"] == "INCLUDE").sum())
     ai_exclude = int((screened["AI_Decision"] == "EXCLUDE").sum())
@@ -76,13 +87,26 @@ def main() -> None:
     audit_overturned = int(((screened["Final_Decision"] == "INCLUDE") & audit_mask).sum())
     audit_confirmed = int(((screened["Final_Decision"] == "EXCLUDE") & audit_mask).sum())
     included_after_consensus = int((screened["Final_Decision"] == "INCLUDE").sum())
-    final_included = int((screened["Public_Inclusion"] == "INCLUDE").sum())
-    preprints_removed = int(cleanup_notes.str.contains("preprint|non-peer-reviewed", case=False, regex=True).sum())
-    stone_scope_removed = int(cleanup_notes.str.contains("stone", case=False, regex=True).sum())
+    final_included = int((screened[analytic_col] == "INCLUDE").sum())
+    preprints_removed = summary.get(
+        "preprints_removed",
+        int(cleanup_notes.str.contains("preprint|non-peer-reviewed", case=False, regex=True).sum()),
+    )
+    stone_scope_removed = summary.get(
+        "stone_scope_removed",
+        int(cleanup_notes.str.contains("stone", case=False, regex=True).sum()),
+    )
+    ai_only_include_population = summary.get("ai_only_include_population", 0)
+    ai_only_include_audit_rows = summary.get("ai_only_include_audit_rows", len(ai_include_audit))
+    ai_only_include_retained = (
+        int((ai_include_audit["Analytic_Set_Decision"] == "INCLUDE").sum())
+        if "Analytic_Set_Decision" in ai_include_audit.columns
+        else ai_only_include_audit_rows
+    )
 
     fig, ax = plt.subplots(figsize=(10.5, 11.9))
     ax.set_xlim(-0.12, 1.02)
-    ax.set_ylim(0, 1)
+    ax.set_ylim(-0.03, 1)
     ax.axis("off")
 
     blue = "#6f95d1"
@@ -162,9 +186,10 @@ def main() -> None:
         weight="bold",
     )
 
-    # Split boxes
-    left_x, left_y, left_w, left_h = 0.08, 0.25, 0.40, 0.14
-    right_x, right_y, right_w, right_h = 0.56, 0.25, 0.34, 0.14
+    # Human-review and audit boxes
+    left_x, left_y, left_w, left_h = 0.02, 0.25, 0.33, 0.14
+    mid_x, mid_y, mid_w, mid_h = 0.39, 0.25, 0.27, 0.14
+    right_x, right_y, right_w, right_h = 0.70, 0.25, 0.27, 0.14
     add_box(
         ax,
         left_x,
@@ -173,7 +198,17 @@ def main() -> None:
         left_h,
         f"Dual human review of records\nrequiring adjudication\n(n = {int(dual_mask.sum()):,})\nretained {dual_include:,}, excluded {dual_exclude:,}",
         peach,
-        fs=10.6,
+        fs=9.5,
+    )
+    add_box(
+        ax,
+        mid_x,
+        mid_y,
+        mid_w,
+        mid_h,
+        f"Random 20% human audit\nof AI excludes\n(n = {int(audit_mask.sum()):,})\n{audit_overturned:,} overturned,\n{audit_confirmed:,} confirmed exclude",
+        pale_green,
+        fs=8.7,
     )
     add_box(
         ax,
@@ -181,9 +216,9 @@ def main() -> None:
         right_y,
         right_w,
         right_h,
-        f"Random 20% human audit\nof AI excludes\n(n = {int(audit_mask.sum()):,})\n{audit_overturned:,} overturned,\n{audit_confirmed:,} confirmed exclude",
+        f"Random audit of AI-only\nincluded records\n(n = {ai_only_include_audit_rows:,} of {ai_only_include_population:,})\n{ai_only_include_retained:,} retained",
         pale_green,
-        fs=9.8,
+        fs=8.5,
     )
 
     add_box(
@@ -224,10 +259,12 @@ def main() -> None:
     down_arrow(ax, center_x, 0.75, 0.725)
     down_arrow(ax, center_x, 0.66, 0.635)
     down_arrow(ax, center_x, 0.57, 0.53)
-    diagonal_arrow(ax, 0.39, 0.44, 0.26, 0.37)
-    diagonal_arrow(ax, 0.67, 0.44, 0.73, 0.37)
-    diagonal_arrow(ax, 0.31, 0.25, 0.39, 0.23)
-    diagonal_arrow(ax, 0.71, 0.25, 0.64, 0.23)
+    diagonal_arrow(ax, 0.38, 0.44, 0.19, 0.37)
+    diagonal_arrow(ax, 0.56, 0.44, 0.52, 0.37)
+    diagonal_arrow(ax, 0.70, 0.44, 0.84, 0.37)
+    diagonal_arrow(ax, 0.19, 0.25, 0.39, 0.23)
+    diagonal_arrow(ax, 0.52, 0.25, 0.53, 0.23)
+    diagonal_arrow(ax, 0.84, 0.25, 0.66, 0.23)
     down_arrow(ax, 0.525, 0.16, 0.135)
     down_arrow(ax, 0.525, 0.075, 0.06)
 
@@ -238,12 +275,10 @@ def main() -> None:
     ax.text(label_x, 0.195, "ELIGIBILITY", ha="left", va="center", fontsize=13, fontweight="bold", color=green)
     ax.text(label_x, 0.03, "INCLUDED", ha="left", va="center", fontsize=13, fontweight="bold", color=blue)
 
-    png_path = FIG_DIR / "prisma_flow_diagram.png"
-    pdf_path = FIG_DIR / "prisma_flow_diagram.pdf"
+    png_path = FIG_DIR / "Figure1_PRISMA_flow.png"
+    pdf_path = FIG_DIR / "Figure1_PRISMA_flow.pdf"
     fig.savefig(png_path, dpi=300, bbox_inches="tight", pad_inches=0.22)
     fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.22)
-    plt.close(fig)
-    print(f"Wrote {png_path.name} and {pdf_path.name}")
     plt.close(fig)
     print(f"Wrote {png_path.name} and {pdf_path.name}")
 
