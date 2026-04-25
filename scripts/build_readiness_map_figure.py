@@ -172,11 +172,11 @@ def main() -> None:
     ax.spines["left"].set_linewidth(1.1)
     ax.spines["bottom"].set_linewidth(1.1)
 
-    fig.subplots_adjust(left=0.10, right=0.98, bottom=0.10, top=0.90)
+    fig.subplots_adjust(left=0.16, right=0.90, bottom=0.12, top=0.90)
     png_path = FIG_DIR / "Figure2_readiness_map.png"
     pdf_path = FIG_DIR / "Figure2_readiness_map.pdf"
-    fig.savefig(png_path, dpi=300, bbox_inches="tight")
-    fig.savefig(pdf_path, bbox_inches="tight")
+    fig.savefig(png_path, dpi=300, facecolor="white")
+    fig.savefig(pdf_path, facecolor="white")
     plt.close(fig)
     print(f"Wrote {png_path.name} and {pdf_path.name}")
 
