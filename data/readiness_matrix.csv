@@ -1,17 +1,17 @@
-"Task_Class","Clinical_Task","Highest_Validation_Stage","Consequence_of_Error","Likely_Workflow_Value","Current_Position","Principal_Limitation"
-"Perception AI","Prostate MRI reader assistance","5","High","High","Most mature current candidate for implementation planning","Needs local calibration and pathway-level impact evidence"
-"Perception AI","Prostate digital pathology","5","High","High","Implementation-planning candidate in selected workflows","Scanner, stain, and local workflow calibration remain critical"
-"Perception AI","Selected bladder cystoscopy systems","4","High","High","Implementation-stage candidate","Needs broader prospective evaluation and downstream outcome data"
-"Perception AI","PSMA PET quantification and lesion support","3","High","Moderate","Promising adjunct with multicentre technical validation","Limited prospective and outcome-linked evidence"
-"Perception AI","Micro-ultrasound lesion localization","3","High","Moderate","Emerging adjunct rather than a deployable workflow","Evidence base remains thin and modality uptake is limited"
-"Perception AI","Renal radiomics and renal-mass prediction","2","High","Moderate","Exploratory to retrospective","Heterogeneous labels, weak transportability, and limited prospective testing"
-"Judgment AI","UTI triage and stewardship support","5","High","High","Strong workflow-support use case","Needs site-level transportability and stewardship governance"
-"Judgment AI","Functional urology and neurourology prediction","3","High","Moderate","Promising but inconsistent","Noisy phenotypes and sparse prospective evaluation"
-"Perception AI","Surgical video analytics and feedback","3","Moderate","High","Useful for audit, training, and feedback","Not ready for credentialing or unsupervised intraoperative decisions"
-"Judgment AI","MDT and pathway decision support","5","High","High","Implementation-stage candidate for workflow streamlining","Needs broader prospective evaluation across centres and teams"
-"Perception AI","Semen analysis automation","3","Moderate","High","Tangible laboratory support use case","Ground truth remains noisy and fertility-outcome linkage is limited"
-"Perception AI","AI-assisted sperm selection for ICSI","4","High","High","High-potential laboratory automation","No convincing implantation or live-birth outcome evidence"
-"Judgment AI","Male infertility and sperm-retrieval prediction","3","High","Moderate","Counselling adjunct only","Large harmonized outcome datasets remain scarce"
-"Judgment AI","ED and sexual-function outcome prediction","3","Moderate","Moderate","Risk-communication adjunct only","External validation and prospective workflow testing remain limited"
-"Communication/Workflow AI","Ambient documentation support","5","Moderate","High","Most defensible current LLM deployment use case","Requires clinician review and hallucination monitoring"
-"Communication/Workflow AI","Retrieval-grounded guideline support","3","High","Moderate","Clinician-facing support, not autonomous advice","Benchmarking evidence exceeds real clinical-use evidence"
+Task_Class,Clinical_Task,Highest_Validation_Stage,Consequence_of_Error,Likely_Workflow_Value,Current_Position,Principal_Limitation
+Perception AI,Prostate MRI reader assistance,5,High,High,Most mature current candidate for implementation planning,Needs local calibration and pathway-level impact evidence
+Perception AI,Prostate digital pathology,5,High,High,Implementation-planning candidate in selected workflows,"Scanner, stain, and local workflow calibration remain critical"
+Perception AI,Selected bladder cystoscopy systems,4,High,High,Implementation-stage candidate,Needs broader prospective evaluation and downstream outcome data
+Perception AI,PSMA PET quantification and lesion support,3,High,Moderate,Promising adjunct with multicentre technical validation,Limited prospective and outcome-linked evidence
+Perception AI,Micro-ultrasound lesion localization,3,High,Moderate,Emerging adjunct rather than a deployable workflow,Evidence base remains thin and modality uptake is limited
+Perception AI,Renal radiomics and renal-mass prediction,2,High,Moderate,Exploratory to retrospective,"Heterogeneous labels, weak transportability, and limited prospective testing"
+Judgment AI,UTI triage and stewardship support,5,High,High,Strong workflow-support use case,Needs site-level transportability and stewardship governance
+Judgment AI,Functional urology and neurourology prediction,3,High,Moderate,Promising but inconsistent,Noisy phenotypes and sparse prospective evaluation
+Perception AI,Surgical video analytics and feedback,3,Moderate,High,"Useful for audit, training, and feedback",Not ready for credentialing or unsupervised intraoperative decisions
+Judgment AI,MDT and pathway decision support,4,High,High,Contextual implementation exemplar rather than corpus-supported maturity tier,Staging is based on a contextual exemplar; broader corpus-supported prospective evidence is needed
+Perception AI,AI-assisted sperm selection for ICSI,4,High,High,High-potential laboratory automation,No convincing implantation or live-birth outcome evidence
+Judgment AI,Male infertility and sperm-retrieval prediction,3,High,Moderate,Counselling adjunct only,Large harmonized outcome datasets remain scarce
+Judgment AI,ED and sexual-function outcome prediction,3,Moderate,Moderate,Risk-communication adjunct only,External validation and prospective workflow testing remain limited
+Communication/Workflow AI,Clinician-reviewed patient-message response support,2,Moderate,Moderate,Emerging supervised communication adjunct rather than implementation-planning candidate,Single-centre comparative evidence without workflow implementation or external validation
+Communication/Workflow AI,Ambient documentation support,4,Moderate,High,Contextual urology ambient-scribe exemplar rather than corpus-supported maturity tier,Urology-specific evidence is contextual and still requires clinician review and implementation monitoring
+Communication/Workflow AI,Retrieval-grounded guideline support,3,High,Moderate,"Clinician-facing support, not autonomous advice",Benchmarking evidence exceeds real clinical-use evidence

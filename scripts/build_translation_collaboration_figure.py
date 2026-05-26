@@ -2,66 +2,136 @@
 from __future__ import annotations
 
 from pathlib import Path
+from textwrap import fill
 
 import matplotlib.pyplot as plt
-from PIL import Image
+from matplotlib.patches import FancyBboxPatch
 
 
 ROOT = Path(__file__).resolve().parent.parent
 FIG_DIR = ROOT / "figures"
-SOURCE_A = ROOT / "assets" / "translation_determinants_panel.png"
-SOURCE_B = ROOT / "assets" / "collaboration_models_panel.png"
-
-PANEL_A_CROP_TOP = 240
-PANEL_B_CROP_TOP = 180
-TARGET_WIDTH = 3200
 
 
-def load_panel(path: Path, crop_top: int) -> Image.Image:
-    img = Image.open(path).convert("RGB")
-    return img.crop((0, crop_top, img.width, img.height))
+def add_box(ax, xy: tuple[float, float], width: float, height: float, title: str, body: str, color: str) -> None:
+    x, y = xy
+    box = FancyBboxPatch(
+        (x, y),
+        width,
+        height,
+        boxstyle="round,pad=0.02,rounding_size=0.04",
+        linewidth=1.2,
+        edgecolor="#6b7280",
+        facecolor=color,
+    )
+    ax.add_patch(box)
+    ax.text(x + 0.18, y + height - 0.20, title, ha="left", va="top", fontsize=11.5, fontweight="bold", color="#111827")
+    ax.text(
+        x + 0.18,
+        y + height - 0.52,
+        fill(body, width=36),
+        ha="left",
+        va="top",
+        fontsize=9.6,
+        color="#1f2937",
+        linespacing=1.22,
+    )
 
 
-def resize_to_width(img: Image.Image, width: int) -> Image.Image:
-    scale = width / img.width
-    height = round(img.height * scale)
-    return img.resize((width, height), Image.Resampling.LANCZOS)
+def draw_panel_a(ax) -> None:
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 6)
+    ax.axis("off")
+
+    ax.text(0.0, 5.75, "A. Determinants of translational readiness", fontsize=15, fontweight="bold", color="#111827")
+    ax.text(0.0, 5.35, "Readiness rises when technical validation is paired with workflow evidence and retained clinical oversight.", fontsize=10.5, color="#374151")
+
+    rows = [
+        (
+            "Implementation-planning candidates",
+            "Prostate MRI reader assistance; prostate digital pathology; UTI triage.",
+            "#dbeafe",
+        ),
+        (
+            "Near-implementation candidates",
+            "Selected bladder cystoscopy systems; AI-assisted sperm selection for ICSI; contextual pathway triage exemplars.",
+            "#dcfce7",
+        ),
+        (
+            "Promising adjuncts",
+            "PSMA PET quantification; micro-ultrasound; surgical video analytics; male infertility prediction; patient-message support; retrieval-grounded LLMs.",
+            "#fef3c7",
+        ),
+        (
+            "Earlier or constrained areas",
+            "Renal radiomics, many functional-urology models, ED prediction, and autonomous LLM advice remain limited by validation and safety gaps.",
+            "#fee2e2",
+        ),
+    ]
+    y = 4.25
+    for title, body, color in rows:
+        add_box(ax, (0.2, y), 9.2, 0.78, title, body, color)
+        y -= 1.05
+
+
+def draw_panel_b(ax) -> None:
+    ax.set_xlim(0, 10)
+    ax.set_ylim(0, 6)
+    ax.axis("off")
+
+    ax.text(0.0, 5.75, "B. Human-AI collaboration models", fontsize=15, fontweight="bold", color="#111827")
+    ax.text(0.0, 5.35, "The credible role is supervised augmentation, with the human checkpoint placed where error consequences are manageable.", fontsize=10.5, color="#374151")
+
+    columns = [
+        (
+            "Second reader",
+            "Imaging and pathology systems surface candidate lesions or classifications for clinician confirmation.",
+            "Prostate MRI\nProstate pathology\nBladder cystoscopy",
+            "#e0f2fe",
+        ),
+        (
+            "Workflow triage",
+            "Rules or models route routine cases while preserving escalation for uncertainty and high-risk findings.",
+            "UTI stewardship\nMDT/pathway triage\nGuideline support",
+            "#ecfdf5",
+        ),
+        (
+            "Laboratory support",
+            "AI assists bounded laboratory steps, but clinical outcome benefit still needs prospective proof.",
+            "ICSI sperm selection\nSperm-retrieval prediction\nMicroscopy support",
+            "#fff7ed",
+        ),
+        (
+            "Communication support",
+            "Drafting or summarizing is acceptable only with clinician review, provenance checks, and hallucination monitoring.",
+            "Patient messages\nAmbient scribes\nPatient-facing summaries",
+            "#f3e8ff",
+        ),
+    ]
+
+    x = 0.15
+    for title, body, examples, color in columns:
+        add_box(ax, (x, 2.05), 2.25, 2.75, title, body, color)
+        ax.text(x + 0.18, 2.55, examples, ha="left", va="top", fontsize=9.5, color="#111827", linespacing=1.35)
+        x += 2.42
+
+    ax.text(
+        0.25,
+        0.85,
+        "Minimum safeguards: external validation, local calibration, clinician comparison, prospective workflow testing, failure-mode analysis, and post-deployment monitoring.",
+        fontsize=10.5,
+        color="#111827",
+        ha="left",
+        va="center",
+        bbox=dict(boxstyle="round,pad=0.35", facecolor="#f9fafb", edgecolor="#9ca3af"),
+    )
 
 
 def main() -> None:
     FIG_DIR.mkdir(parents=True, exist_ok=True)
-
-    panel_a = resize_to_width(load_panel(SOURCE_A, PANEL_A_CROP_TOP), TARGET_WIDTH)
-    panel_b = resize_to_width(load_panel(SOURCE_B, PANEL_B_CROP_TOP), TARGET_WIDTH)
-
-    fig, axes = plt.subplots(
-        2,
-        1,
-        figsize=(12.2, 12.8),
-        gridspec_kw={"height_ratios": [panel_a.height, panel_b.height]},
-    )
-
-    panel_specs = [
-        (axes[0], panel_a, "A. Determinants of translational readiness"),
-        (axes[1], panel_b, "B. Human-AI collaboration models"),
-    ]
-
-    for ax, panel, title in panel_specs:
-        ax.imshow(panel)
-        ax.axis("off")
-        ax.text(
-            0.0,
-            1.015,
-            title,
-            transform=ax.transAxes,
-            ha="left",
-            va="bottom",
-            fontsize=15,
-            fontweight="bold",
-            color="#222222",
-        )
-
-    fig.subplots_adjust(left=0.03, right=0.97, top=0.98, bottom=0.02, hspace=0.14)
+    fig, axes = plt.subplots(2, 1, figsize=(12.2, 12.8))
+    draw_panel_a(axes[0])
+    draw_panel_b(axes[1])
+    fig.subplots_adjust(left=0.04, right=0.98, top=0.98, bottom=0.04, hspace=0.20)
 
     png_path = FIG_DIR / "Figure3_translation_and_collaboration_models.png"
     pdf_path = FIG_DIR / "Figure3_translation_and_collaboration_models.pdf"

@@ -39,9 +39,7 @@ def build_domain_table(df: pd.DataFrame) -> pd.DataFrame:
     domain["review_pct"] = (100 * domain["review_records"] / domain["total_records"]).round(1)
     domain["commentary_pct"] = (100 * domain["commentary_records"] / domain["total_records"]).round(1)
     domain["non_original_pct"] = (100 * domain["non_original_records"] / domain["total_records"]).round(1)
-    domain["review_per_100_original"] = (
-        100 * domain["review_records"] / (domain["total_records"] - domain["review_records"])
-    ).round(1)
+    domain["review_per_100_original"] = (100 * domain["review_records"] / domain["original_records"]).round(1)
     domain = domain.sort_values(["review_pct", "review_records", "total_records"], ascending=[False, False, False])
     return domain[
         [
@@ -124,6 +122,7 @@ def main() -> None:
     year = build_year_table(df)
 
     domain.to_csv(DOMAIN_SOURCE_OUT, index=False)
+    domain.to_csv(DATA_OUT_DIR / "review_paradox_by_domain.csv", index=False)
     year.to_csv(DATA_OUT_DIR / "review_burden_by_year.csv", index=False)
 
     make_figure(domain)

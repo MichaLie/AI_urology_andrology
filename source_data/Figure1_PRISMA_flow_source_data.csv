@@ -8,9 +8,20 @@ ai_exclude,AI exclude,2202
 ai_uncertain,AI uncertain,390
 human_dual_review_rows,Dual human review rows,648
 human_exclude_audit_rows,AI-exclude audit rows,439
-ai_only_include_population,AI-only Include population,3053
+ai_only_include_population,AI-only Include population,3073
 ai_only_include_audit_rows,AI-only Include audit rows,305
-included_after_consensus,Included after consensus,3450
+included_before_final_cleanup,Included before final file-level cleanup after audit correction,3423
 preprints_removed,Preprints removed,19
-stone_scope_removed,Stone-scope records removed,6
-final_included_records,Final included record set,3425
+stone_scope_removed,Stone-scope records removed,9
+non_urology_documentation_removed,Non-urology ambient-documentation records removed,2
+other_scope_removed,Other non-urological or nonclinical records removed,13
+residual_out_of_scope_removed,Residual out-of-scope records removed,24
+retracted_publications_removed,Retracted publications removed,3
+errata_corrections_removed,Errata/correction notices removed,3
+conference_proceedings_removed,Conference/proceedings records removed,11
+publication_type_cleanup_removed,Publication-type cleanup records removed,17
+duplicate_or_near_duplicate_removed,Duplicate or near-duplicate records removed,11
+final_file_level_cleanup_removed,Final file-level cleanup records removed,71
+final_included_records,Final included record set,3352
+ai_only_include_audit_exclusions_applied,AI-only Include audit exclusions applied,27
+ai_only_include_audit_confirmed_includes,AI-only Include audit confirmed includes,278

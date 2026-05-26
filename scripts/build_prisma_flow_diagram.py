@@ -86,7 +86,7 @@ def main() -> None:
     dual_exclude = int(((screened["Final_Decision"] == "EXCLUDE") & dual_mask).sum())
     audit_overturned = int(((screened["Final_Decision"] == "INCLUDE") & audit_mask).sum())
     audit_confirmed = int(((screened["Final_Decision"] == "EXCLUDE") & audit_mask).sum())
-    included_after_consensus = int((screened["Final_Decision"] == "INCLUDE").sum())
+    included_before_final_cleanup = int((screened["Final_Decision"] == "INCLUDE").sum())
     final_included = int((screened[analytic_col] == "INCLUDE").sum())
     preprints_removed = summary.get(
         "preprints_removed",
@@ -96,12 +96,33 @@ def main() -> None:
         "stone_scope_removed",
         int(cleanup_notes.str.contains("stone", case=False, regex=True).sum()),
     )
-    ai_only_include_population = summary.get("ai_only_include_population", 0)
+    ai_only_include_population = int(
+        screened["Review_Pathway"].fillna("").str.contains("AI-only include", case=False, regex=False).sum()
+    )
     ai_only_include_audit_rows = summary.get("ai_only_include_audit_rows", len(ai_include_audit))
     ai_only_include_retained = (
         int((ai_include_audit["Analytic_Set_Decision"] == "INCLUDE").sum())
         if "Analytic_Set_Decision" in ai_include_audit.columns
         else ai_only_include_audit_rows
+    )
+    non_urology_scope_removed = int(
+        cleanup_notes.str.contains("non-urological ambient documentation", case=False, regex=False).sum()
+    )
+    other_scope_removed = int(
+        cleanup_notes.str.contains("non-urological or nonclinical", case=False, regex=False).sum()
+    )
+    retracted_removed = int(cleanup_notes.str.contains("retracted publication", case=False, regex=False).sum())
+    errata_removed = int(cleanup_notes.str.contains("erratum or correction", case=False, regex=False).sum())
+    conference_removed = int(cleanup_notes.str.contains("conference/proceedings", case=False, regex=False).sum())
+    duplicate_removed = int(cleanup_notes.str.contains("duplicate", case=False, regex=False).sum())
+    residual_out_of_scope_removed = stone_scope_removed + non_urology_scope_removed + other_scope_removed
+    publication_type_cleanup_removed = retracted_removed + errata_removed + conference_removed
+    publication_or_duplicate_cleanup_removed = publication_type_cleanup_removed + duplicate_removed
+    final_file_level_cleanup_removed = (
+        preprints_removed
+        + residual_out_of_scope_removed
+        + publication_type_cleanup_removed
+        + duplicate_removed
     )
 
     fig, ax = plt.subplots(figsize=(10.5, 11.9))
@@ -227,7 +248,7 @@ def main() -> None:
         0.16,
         0.57,
         0.07,
-        f"Records retained after consensus\nand audit correction\n(n = {included_after_consensus:,})",
+        f"Records retained after audit correction\nbefore final cleanup\n(n = {included_before_final_cleanup:,})",
         green,
         fs=11.6,
         weight="bold",
@@ -236,11 +257,15 @@ def main() -> None:
         ax,
         0.27,
         0.075,
-        0.51,
-        0.06,
-        f"Post-screening cleanup exclusions\npreprints (n = {preprints_removed:,}) + residual out-of-scope\nrecords (n = {stone_scope_removed:,})",
+        0.54,
+        0.066,
+        (
+            f"Post-screening cleanup exclusions\n"
+            f"preprints (n = {preprints_removed:,}) + residual out-of-scope (n = {residual_out_of_scope_removed:,})\n"
+            f"publication-type/duplicate cleanup (n = {publication_or_duplicate_cleanup_removed:,})"
+        ),
         peach,
-        fs=9.8,
+        fs=8.5,
     )
     add_box(
         ax,
@@ -280,6 +305,49 @@ def main() -> None:
     fig.savefig(png_path, dpi=300, bbox_inches="tight", pad_inches=0.22)
     fig.savefig(pdf_path, bbox_inches="tight", pad_inches=0.22)
     plt.close(fig)
+    source_rows = [
+        ("pubmed_hits_across_queries", "PubMed hits across queries", summary["pubmed_hits_across_queries"]),
+        ("query_union_unique_records", "Unique records after deduplication", summary["query_union_unique_records"]),
+        ("pre_screen_relevance_exclusions", "Prescreen relevance exclusions", summary["pre_screen_relevance_exclusions"]),
+        ("unique_records_screened", "Records screened", summary["unique_records_screened"]),
+        ("ai_include", "AI include", ai_include),
+        ("ai_exclude", "AI exclude", ai_exclude),
+        ("ai_uncertain", "AI uncertain", ai_uncertain),
+        ("human_dual_review_rows", "Dual human review rows", int(dual_mask.sum())),
+        ("human_exclude_audit_rows", "AI-exclude audit rows", int(audit_mask.sum())),
+        ("ai_only_include_population", "AI-only Include population", ai_only_include_population),
+        ("ai_only_include_audit_rows", "AI-only Include audit rows", ai_only_include_audit_rows),
+        (
+            "included_before_final_cleanup",
+            "Included before final file-level cleanup after audit correction",
+            included_before_final_cleanup,
+        ),
+        ("preprints_removed", "Preprints removed", preprints_removed),
+        ("stone_scope_removed", "Stone-scope records removed", stone_scope_removed),
+        ("non_urology_documentation_removed", "Non-urology ambient-documentation records removed", non_urology_scope_removed),
+        ("other_scope_removed", "Other non-urological or nonclinical records removed", other_scope_removed),
+        ("residual_out_of_scope_removed", "Residual out-of-scope records removed", residual_out_of_scope_removed),
+        ("retracted_publications_removed", "Retracted publications removed", retracted_removed),
+        ("errata_corrections_removed", "Errata/correction notices removed", errata_removed),
+        ("conference_proceedings_removed", "Conference/proceedings records removed", conference_removed),
+        ("publication_type_cleanup_removed", "Publication-type cleanup records removed", publication_type_cleanup_removed),
+        ("duplicate_or_near_duplicate_removed", "Duplicate or near-duplicate records removed", duplicate_removed),
+        ("final_file_level_cleanup_removed", "Final file-level cleanup records removed", final_file_level_cleanup_removed),
+        ("final_included_records", "Final included record set", final_included),
+        (
+            "ai_only_include_audit_exclusions_applied",
+            "AI-only Include audit exclusions applied",
+            summary.get("ai_only_include_audit_exclusions_applied", 0),
+        ),
+        (
+            "ai_only_include_audit_confirmed_includes",
+            "AI-only Include audit confirmed includes",
+            summary.get("ai_only_include_audit_confirmed_includes", ai_only_include_retained),
+        ),
+    ]
+    source_path = ROOT / "source_data" / "Figure1_PRISMA_flow_source_data.csv"
+    source_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(source_rows, columns=["Metric_Key", "Metric_Label", "Value"]).to_csv(source_path, index=False)
     print(f"Wrote {png_path.name} and {pdf_path.name}")
 
 

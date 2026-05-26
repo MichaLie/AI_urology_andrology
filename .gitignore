@@ -4,7 +4,6 @@ __pycache__/
 figures/
 data/publication_trends_by_domain.csv
 data/review_burden_by_domain.csv
-data/review_burden_by_year.csv
 data/screening_master.csv
 data/screening_master_screened.csv
 data/harvest_log.txt
