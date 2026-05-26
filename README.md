@@ -78,4 +78,4 @@ The harvester writes `data/screening_master.csv`; that live-retrieval file is no
 
 ## Citation
 
-Please cite the archived repository release and the associated article when using these data or scripts. The repository release is tagged as `v1.2.0`; an archived DOI will be added after deposition through Zenodo or OSF.
+Please cite the archived repository release and the associated article when using these data or scripts. The archived repository release is tagged as `v1.2.1` and is available at https://doi.org/10.5281/zenodo.20389927.

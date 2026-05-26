@@ -49,4 +49,4 @@ Expected output directory: `figures/`.
 
 ## Versioning
 
-The current public release is tagged as `v1.2.0`. When using this repository, cite the archived repository DOI and the associated article when available.
+The archived public release is tagged as `v1.2.1` and is available at https://doi.org/10.5281/zenodo.20389927. When using this repository, cite the archived repository DOI and the associated article when available.
