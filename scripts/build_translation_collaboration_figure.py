@@ -53,7 +53,7 @@ def draw_panel_a(ax) -> None:
         ),
         (
             "Near-implementation candidates",
-            "Selected bladder cystoscopy systems; AI-assisted sperm selection for ICSI; contextual pathway triage exemplars.",
+            "Selected bladder cystoscopy systems; AI-assisted sperm selection for ICSI.",
             "#dcfce7",
         ),
         (
@@ -62,8 +62,8 @@ def draw_panel_a(ax) -> None:
             "#fef3c7",
         ),
         (
-            "Earlier or constrained areas",
-            "Renal radiomics, many functional-urology models, ED prediction, and autonomous LLM advice remain limited by validation and safety gaps.",
+            "Earlier or contextual areas",
+            "Contextual MDT/pathway triage and ambient documentation exemplars, renal radiomics, functional-urology models, ED prediction, and autonomous LLM advice remain limited by validation or safety gaps.",
             "#fee2e2",
         ),
     ]

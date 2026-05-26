@@ -49,4 +49,4 @@ Expected output directory: `figures/`.
 
 ## Versioning
 
-For public release, create a release tag such as `v1.1.0` and archive that release through Zenodo or OSF. Cite the resulting DOI in the manuscript Data Availability and Code Availability statements.
+The corrected R1 public release is tagged as `v1.2.0`. Archive that release through Zenodo or OSF and cite the resulting DOI in the manuscript Data Availability and Code Availability statements.
