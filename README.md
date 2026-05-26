@@ -4,7 +4,7 @@ This repository contains the public data and code required to reproduce the revi
 
 > Clinical readiness of artificial intelligence in urology and andrology: a PubMed-indexed scoping review and evidence map
 
-This R1 working copy reflects the corrected 3,393-record analytic set used for revision after abstract-informed AI-only Include audit exclusions and final scope cleanup were applied.
+This R1 working copy reflects the corrected 3,352-record analytic set used for revision after abstract-informed AI-only Include audit exclusions and final scope, publication-type, and duplicate-record cleanup were applied.
 
 ## Layout
 
