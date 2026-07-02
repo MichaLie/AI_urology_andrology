@@ -78,4 +78,4 @@ The harvester writes `data/screening_master.csv`; that live-retrieval file is no
 
 ## Citation
 
-Please cite the archived repository release and the associated article when using these data or scripts. Version `v1.2.2` is prepared for the minor-revision package; after GitHub and Zenodo archiving, cite the DOI assigned to that release.
+Please cite the archived repository release and the associated article when using these data or scripts. The minor-revision release is tagged as `v1.2.2` and is available at https://doi.org/10.5281/zenodo.21127985. The all-versions Zenodo concept DOI is https://doi.org/10.5281/zenodo.20389926.

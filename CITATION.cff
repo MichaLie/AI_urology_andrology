@@ -1,6 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this dataset or code, please cite the archived release and the associated article."
 title: "AI in urology and andrology clinical-readiness evidence map"
+doi: "10.5281/zenodo.21127985"
+url: "https://doi.org/10.5281/zenodo.21127985"
 authors:
   - family-names: "Liegertová"
     given-names: "Michaela"

@@ -49,4 +49,4 @@ Expected output directory: `figures/`.
 
 ## Versioning
 
-Version `v1.2.2` is prepared for the minor-revision package. After GitHub release and Zenodo archiving, cite the DOI assigned to that release and the associated article when available.
+The minor-revision release is tagged as `v1.2.2` and is available at https://doi.org/10.5281/zenodo.21127985. The all-versions Zenodo concept DOI is https://doi.org/10.5281/zenodo.20389926. Cite the archived release DOI and the associated article when available.
