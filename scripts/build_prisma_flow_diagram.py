@@ -100,10 +100,21 @@ def main() -> None:
         screened["Review_Pathway"].fillna("").str.contains("AI-only include", case=False, regex=False).sum()
     )
     ai_only_include_audit_rows = summary.get("ai_only_include_audit_rows", len(ai_include_audit))
-    ai_only_include_retained = (
-        int((ai_include_audit["Analytic_Set_Decision"] == "INCLUDE").sum())
-        if "Analytic_Set_Decision" in ai_include_audit.columns
-        else ai_only_include_audit_rows
+    ai_only_include_confirmed = summary.get(
+        "ai_only_include_audit_confirmed_includes",
+        int((ai_include_audit["Abstract_Informed_Decision"] == "CONFIRM_INCLUDE").sum())
+        if "Abstract_Informed_Decision" in ai_include_audit.columns
+        else ai_only_include_audit_rows,
+    )
+    ai_only_include_exclusions = summary.get(
+        "ai_only_include_audit_exclusions_applied",
+        int((ai_include_audit["Abstract_Informed_Decision"] == "EXCLUDE").sum())
+        if "Abstract_Informed_Decision" in ai_include_audit.columns
+        else 0,
+    )
+    retained_before_ai_only_audit_exclusions = summary.get(
+        "retained_before_ai_only_include_audit_exclusions",
+        included_before_final_cleanup + ai_only_include_exclusions,
     )
     non_urology_scope_removed = int(
         cleanup_notes.str.contains("non-urological ambient documentation", case=False, regex=False).sum()
@@ -125,9 +136,9 @@ def main() -> None:
         + duplicate_removed
     )
 
-    fig, ax = plt.subplots(figsize=(10.5, 11.9))
+    fig, ax = plt.subplots(figsize=(10.5, 13.8))
     ax.set_xlim(-0.12, 1.02)
-    ax.set_ylim(-0.03, 1)
+    ax.set_ylim(-0.12, 1.04)
     ax.axis("off")
 
     blue = "#6f95d1"
@@ -140,7 +151,7 @@ def main() -> None:
     # Title above the top box
     ax.text(
         0.45,
-        0.972,
+        1.002,
         "Literature Screening Flow Diagram",
         ha="center",
         va="center",
@@ -156,7 +167,7 @@ def main() -> None:
     add_box(
         ax,
         top_x,
-        0.84,
+        0.875,
         top_w,
         0.065,
         f"PubMed hits returned across 20 domain-specific queries\n(n = {summary['pubmed_hits_across_queries']:,})",
@@ -167,7 +178,7 @@ def main() -> None:
     add_box(
         ax,
         0.19,
-        0.75,
+        0.795,
         0.72,
         0.065,
         f"Unique records after paginated uncapped retrieval\nand cross-query deduplication (n = {summary['query_union_unique_records']:,})",
@@ -177,7 +188,7 @@ def main() -> None:
     add_box(
         ax,
         0.19,
-        0.66,
+        0.720,
         0.72,
         0.065,
         f"Records removed by conservative relevance filter\nbefore formal screening (n = {summary['pre_screen_relevance_exclusions']:,})",
@@ -187,7 +198,7 @@ def main() -> None:
     add_box(
         ax,
         0.19,
-        0.57,
+        0.640,
         0.72,
         0.065,
         f"Records entering AI-assisted\ntitle/abstract screening\n(n = {summary['records_for_ai_screening']:,})",
@@ -198,7 +209,7 @@ def main() -> None:
     add_box(
         ax,
         0.20,
-        0.44,
+        0.525,
         0.72,
         0.09,
         f"AI-assisted first pass\ninclude {ai_include:,}, exclude {ai_exclude:,}, uncertain {ai_uncertain:,}",
@@ -208,16 +219,16 @@ def main() -> None:
     )
 
     # Human-review and audit boxes
-    left_x, left_y, left_w, left_h = 0.02, 0.25, 0.33, 0.14
-    mid_x, mid_y, mid_w, mid_h = 0.39, 0.25, 0.27, 0.14
-    right_x, right_y, right_w, right_h = 0.70, 0.25, 0.27, 0.14
+    left_x, left_y, left_w, left_h = 0.02, 0.350, 0.33, 0.14
+    mid_x, mid_y, mid_w, mid_h = 0.39, 0.350, 0.27, 0.14
+    right_x, right_y, right_w, right_h = 0.70, 0.350, 0.27, 0.14
     add_box(
         ax,
         left_x,
         left_y,
         left_w,
         left_h,
-        f"Dual human review of records\nrequiring adjudication\n(n = {int(dual_mask.sum()):,})\nretained {dual_include:,}, excluded {dual_exclude:,}",
+        f"Dual human review of records\nrouted to clinician review\n(n = {int(dual_mask.sum()):,})\nretained {dual_include:,}, excluded {dual_exclude:,}",
         peach,
         fs=9.5,
     )
@@ -237,7 +248,7 @@ def main() -> None:
         right_y,
         right_w,
         right_h,
-        f"Random audit of AI-only\nincluded records\n(n = {ai_only_include_audit_rows:,} of {ai_only_include_population:,})\n{ai_only_include_retained:,} retained",
+        f"Random audit of AI-only\nincluded records\n(n = {ai_only_include_audit_rows:,} of {ai_only_include_population:,})\n{ai_only_include_confirmed:,} confirmed include,\n{ai_only_include_exclusions:,} excluded",
         pale_green,
         fs=8.5,
     )
@@ -245,24 +256,45 @@ def main() -> None:
     add_box(
         ax,
         0.24,
-        0.16,
+        0.250,
         0.57,
         0.07,
-        f"Records retained after audit correction\nbefore final cleanup\n(n = {included_before_final_cleanup:,})",
+        f"Records retained after consensus and\nAI-exclude audit correction\n(n = {retained_before_ai_only_audit_exclusions:,})",
         green,
         fs=11.6,
         weight="bold",
     )
     add_box(
         ax,
+        0.31,
+        0.165,
+        0.43,
+        0.055,
+        f"AI-only Include audit exclusions applied\n(n = {ai_only_include_exclusions:,})",
+        pale_green,
+        fs=9.0,
+    )
+    add_box(
+        ax,
+        0.24,
+        0.085,
+        0.57,
+        0.07,
+        f"Records retained after AI-only Include audit\ncorrection before final cleanup\n(n = {included_before_final_cleanup:,})",
+        green,
+        fs=10.5,
+        weight="bold",
+    )
+    add_box(
+        ax,
         0.27,
-        0.075,
+        0.000,
         0.54,
         0.066,
         (
-            f"Post-screening cleanup exclusions\n"
-            f"preprints (n = {preprints_removed:,}) + residual out-of-scope (n = {residual_out_of_scope_removed:,})\n"
-            f"publication-type/duplicate cleanup (n = {publication_or_duplicate_cleanup_removed:,})"
+            f"Final file-level cleanup exclusions (n = {final_file_level_cleanup_removed:,})\n"
+            f"preprints (n = {preprints_removed:,}); residual out-of-scope (n = {residual_out_of_scope_removed:,})\n"
+            f"publication type (n = {publication_type_cleanup_removed:,}); duplicates/near-duplicates (n = {duplicate_removed:,})"
         ),
         peach,
         fs=8.5,
@@ -270,7 +302,7 @@ def main() -> None:
     add_box(
         ax,
         0.25,
-        0.0,
+        -0.090,
         0.56,
         0.06,
         f"Final included record set\n(n = {final_included:,})",
@@ -280,25 +312,27 @@ def main() -> None:
     )
 
     # Arrows
-    down_arrow(ax, center_x, 0.84, 0.815)
-    down_arrow(ax, center_x, 0.75, 0.725)
-    down_arrow(ax, center_x, 0.66, 0.635)
-    down_arrow(ax, center_x, 0.57, 0.53)
-    diagonal_arrow(ax, 0.38, 0.44, 0.19, 0.37)
-    diagonal_arrow(ax, 0.56, 0.44, 0.52, 0.37)
-    diagonal_arrow(ax, 0.70, 0.44, 0.84, 0.37)
-    diagonal_arrow(ax, 0.19, 0.25, 0.39, 0.23)
-    diagonal_arrow(ax, 0.52, 0.25, 0.53, 0.23)
-    diagonal_arrow(ax, 0.84, 0.25, 0.66, 0.23)
-    down_arrow(ax, 0.525, 0.16, 0.135)
-    down_arrow(ax, 0.525, 0.075, 0.06)
+    down_arrow(ax, center_x, 0.875, 0.860)
+    down_arrow(ax, center_x, 0.795, 0.785)
+    down_arrow(ax, center_x, 0.720, 0.705)
+    down_arrow(ax, center_x, 0.640, 0.615)
+    diagonal_arrow(ax, 0.38, 0.525, 0.19, 0.470)
+    diagonal_arrow(ax, 0.56, 0.525, 0.52, 0.470)
+    diagonal_arrow(ax, 0.70, 0.525, 0.84, 0.470)
+    diagonal_arrow(ax, 0.19, 0.350, 0.39, 0.320)
+    diagonal_arrow(ax, 0.52, 0.350, 0.53, 0.320)
+    diagonal_arrow(ax, 0.84, 0.350, 0.66, 0.320)
+    down_arrow(ax, 0.525, 0.250, 0.220)
+    down_arrow(ax, 0.525, 0.165, 0.155)
+    down_arrow(ax, 0.525, 0.085, 0.066)
+    down_arrow(ax, 0.525, 0.000, -0.030)
 
     # Left-side stage labels, centered to relevant boxes
     label_x = -0.11
-    ax.text(label_x, 0.795, "IDENTIFICATION", ha="left", va="center", fontsize=12, fontweight="bold", color=blue)
+    ax.text(label_x, 0.815, "IDENTIFICATION", ha="left", va="center", fontsize=12, fontweight="bold", color=blue)
     ax.text(label_x, 0.485, "SCREENING", ha="left", va="center", fontsize=13, fontweight="bold", color=orange)
-    ax.text(label_x, 0.195, "ELIGIBILITY", ha="left", va="center", fontsize=13, fontweight="bold", color=green)
-    ax.text(label_x, 0.03, "INCLUDED", ha="left", va="center", fontsize=13, fontweight="bold", color=blue)
+    ax.text(label_x, 0.150, "ELIGIBILITY", ha="left", va="center", fontsize=13, fontweight="bold", color=green)
+    ax.text(label_x, -0.060, "INCLUDED", ha="left", va="center", fontsize=13, fontweight="bold", color=blue)
 
     png_path = FIG_DIR / "Figure1_PRISMA_flow.png"
     pdf_path = FIG_DIR / "Figure1_PRISMA_flow.pdf"
@@ -314,9 +348,23 @@ def main() -> None:
         ("ai_exclude", "AI exclude", ai_exclude),
         ("ai_uncertain", "AI uncertain", ai_uncertain),
         ("human_dual_review_rows", "Dual human review rows", int(dual_mask.sum())),
+        ("human_dual_review_retained", "Dual human review retained", dual_include),
+        ("human_dual_review_excluded", "Dual human review excluded", dual_exclude),
         ("human_exclude_audit_rows", "AI-exclude audit rows", int(audit_mask.sum())),
+        ("human_exclude_audit_overturned", "AI-exclude audit overturned", audit_overturned),
+        ("human_exclude_audit_confirmed_exclude", "AI-exclude audit confirmed exclude", audit_confirmed),
         ("ai_only_include_population", "AI-only Include population", ai_only_include_population),
         ("ai_only_include_audit_rows", "AI-only Include audit rows", ai_only_include_audit_rows),
+        (
+            "retained_before_ai_only_include_audit_exclusions",
+            "Retained after consensus and AI-exclude audit correction before AI-only Include audit exclusions",
+            retained_before_ai_only_audit_exclusions,
+        ),
+        (
+            "ai_only_include_audit_exclusions_applied",
+            "AI-only Include audit exclusions applied",
+            ai_only_include_exclusions,
+        ),
         (
             "included_before_final_cleanup",
             "Included before final file-level cleanup after audit correction",
@@ -335,14 +383,9 @@ def main() -> None:
         ("final_file_level_cleanup_removed", "Final file-level cleanup records removed", final_file_level_cleanup_removed),
         ("final_included_records", "Final included record set", final_included),
         (
-            "ai_only_include_audit_exclusions_applied",
-            "AI-only Include audit exclusions applied",
-            summary.get("ai_only_include_audit_exclusions_applied", 0),
-        ),
-        (
             "ai_only_include_audit_confirmed_includes",
             "AI-only Include audit confirmed includes",
-            summary.get("ai_only_include_audit_confirmed_includes", ai_only_include_retained),
+            ai_only_include_confirmed,
         ),
     ]
     source_path = ROOT / "source_data" / "Figure1_PRISMA_flow_source_data.csv"

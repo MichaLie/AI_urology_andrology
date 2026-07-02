@@ -7,9 +7,15 @@ ai_include,AI include,3331
 ai_exclude,AI exclude,2202
 ai_uncertain,AI uncertain,390
 human_dual_review_rows,Dual human review rows,648
+human_dual_review_retained,Dual human review retained,368
+human_dual_review_excluded,Dual human review excluded,280
 human_exclude_audit_rows,AI-exclude audit rows,439
+human_exclude_audit_overturned,AI-exclude audit overturned,9
+human_exclude_audit_confirmed_exclude,AI-exclude audit confirmed exclude,430
 ai_only_include_population,AI-only Include population,3073
 ai_only_include_audit_rows,AI-only Include audit rows,305
+retained_before_ai_only_include_audit_exclusions,Retained after consensus and AI-exclude audit correction before AI-only Include audit exclusions,3450
+ai_only_include_audit_exclusions_applied,AI-only Include audit exclusions applied,27
 included_before_final_cleanup,Included before final file-level cleanup after audit correction,3423
 preprints_removed,Preprints removed,19
 stone_scope_removed,Stone-scope records removed,9
@@ -23,5 +29,4 @@ publication_type_cleanup_removed,Publication-type cleanup records removed,17
 duplicate_or_near_duplicate_removed,Duplicate or near-duplicate records removed,11
 final_file_level_cleanup_removed,Final file-level cleanup records removed,71
 final_included_records,Final included record set,3352
-ai_only_include_audit_exclusions_applied,AI-only Include audit exclusions applied,27
 ai_only_include_audit_confirmed_includes,AI-only Include audit confirmed includes,278

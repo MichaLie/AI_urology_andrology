@@ -42,8 +42,8 @@ POINT_OFFSETS = {
     "UTI triage and stewardship support": (-0.12, -0.08),
     "Functional urology and neurourology prediction": (-0.12, -0.08),
     "Surgical video analytics and feedback": (0.10, 0.02),
-    "MDT and pathway decision support": (0.12, -0.08),
-    "AI-assisted sperm selection for ICSI": (0.08, -0.08),
+    "MDT and pathway decision support": (0.02, -0.10),
+    "AI-assisted sperm selection for ICSI": (0.22, -0.06),
     "Male infertility and sperm-retrieval prediction": (0.12, 0.00),
     "ED and sexual-function outcome prediction": (0.00, -0.10),
     "Clinician-reviewed patient-message response support": (-0.05, 0.00),
@@ -62,12 +62,12 @@ LABEL_SPECS = {
     "UTI triage and stewardship support": {"text": "UTI triage", "dx": 0.04, "dy": 0.06, "ha": "left", "va": "bottom"},
     "Functional urology and neurourology prediction": {"text": "Functional urology", "dx": -0.18, "dy": -0.22, "ha": "right", "va": "center"},
     "Surgical video analytics and feedback": {"text": "Surgical video", "dx": 0.00, "dy": 0.10, "ha": "center", "va": "bottom"},
-    "MDT and pathway decision support": {"text": "MDT/pathway support", "dx": -0.24, "dy": -0.22, "ha": "right", "va": "center"},
-    "AI-assisted sperm selection for ICSI": {"text": "ICSI sperm selection", "dx": 0.07, "dy": -0.09, "ha": "left", "va": "center"},
+    "MDT and pathway decision support": {"text": "MDT/pathway support$^\\dagger$", "dx": -0.34, "dy": -0.20, "ha": "right", "va": "center"},
+    "AI-assisted sperm selection for ICSI": {"text": "ICSI sperm selection", "dx": 0.16, "dy": -0.12, "ha": "left", "va": "center"},
     "Male infertility and sperm-retrieval prediction": {"text": "Male infertility\nprediction", "dx": 0.14, "dy": 0.16, "ha": "left", "va": "center"},
     "ED and sexual-function outcome prediction": {"text": "ED prediction", "dx": 0.05, "dy": -0.06, "ha": "left", "va": "center"},
     "Clinician-reviewed patient-message response support": {"text": "Patient-message\nsupport", "dx": 0.06, "dy": 0.07, "ha": "left", "va": "bottom"},
-    "Ambient documentation support": {"text": "Ambient scribes\n(contextual)", "dx": 0.05, "dy": -0.08, "ha": "left", "va": "center"},
+    "Ambient documentation support": {"text": "Ambient scribes$^\\dagger$\n(contextual)", "dx": 0.05, "dy": -0.08, "ha": "left", "va": "center"},
     "Retrieval-grounded guideline support": {"text": "Retrieval-grounded LLMs", "dx": 0.22, "dy": -0.12, "ha": "left", "va": "center"},
 }
 
@@ -166,6 +166,24 @@ def main() -> None:
     ax.scatter([size_x], [-0.40], s=SIZE_MAP["High"], c="#808080", alpha=0.55, edgecolors="#666666", linewidths=1.2)
     ax.text(size_x + 0.20, -0.28, "Moderate workflow value", fontsize=13.5, color="#222222", va="center")
     ax.text(size_x + 0.20, -0.40, "High workflow value", fontsize=13.5, color="#222222", va="center")
+    ax.text(
+        5.55,
+        -0.50,
+        "Workflow-value criteria: Supplementary Data 8/9",
+        fontsize=7.2,
+        color="#444444",
+        ha="right",
+        va="bottom",
+    )
+    ax.text(
+        1.62,
+        -0.50,
+        "† contextual exemplar outside corpus counts",
+        fontsize=7.2,
+        color="#444444",
+        ha="left",
+        va="bottom",
+    )
 
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)

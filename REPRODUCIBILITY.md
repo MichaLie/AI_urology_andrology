@@ -49,4 +49,4 @@ Expected output directory: `figures/`.
 
 ## Versioning
 
-The archived public release is tagged as `v1.2.1` and is available at https://doi.org/10.5281/zenodo.20389927. When using this repository, cite the archived repository DOI and the associated article when available.
+Version `v1.2.2` is prepared for the minor-revision package. After GitHub release and Zenodo archiving, cite the DOI assigned to that release and the associated article when available.

@@ -1,5 +1,6 @@
 __pycache__/
 .DS_Store
+._*
 .venv/
 figures/
 data/publication_trends_by_domain.csv
