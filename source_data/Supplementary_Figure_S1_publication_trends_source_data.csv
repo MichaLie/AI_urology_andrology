@@ -1,8 +1,8 @@
-Year_int,Prostate Imaging,Prostate Pathology,Bladder Cancer,Renal/Kidney,Benign/Functional,Surgical AI,Andrology,LLMs & GenAI,Governance,Broad Reviews,Total
-2020,30,24,13,44,6,1,18,0,17,23,176
-2021,61,34,28,59,12,2,21,0,23,41,281
-2022,69,45,49,63,14,7,21,0,37,26,331
-2023,83,58,64,77,28,4,39,30,43,36,462
-2024,101,65,102,93,38,8,54,83,81,104,729
-2025,166,77,129,157,67,8,73,79,143,90,989
-2026,59,23,54,48,19,4,38,25,67,47,384
+Year_int,Prostate Imaging,Prostate Pathology,Bladder Cancer,Renal/Kidney,Benign/Functional,Surgical AI,Andrology,LLMs & GenAI,Implementation/ethics/reporting search stream,Broad Reviews,Total
+2020,29,25,13,45,5,0,13,0,10,13,153
+2021,56,31,27,59,12,1,17,0,9,27,239
+2022,66,43,46,63,13,4,16,0,22,17,290
+2023,78,52,61,75,25,4,32,20,31,26,404
+2024,91,61,99,91,37,3,44,65,47,77,615
+2025,155,69,124,155,61,6,58,70,96,66,860
+2026,49,22,52,49,17,3,27,21,53,38,331

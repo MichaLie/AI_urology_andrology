@@ -2,17 +2,20 @@
 """
 PubMed harvest pipeline for AI in urology and andrology.
 
-Runs domain-specific Boolean queries via NCBI Entrez, pulls metadata,
+Runs prespecified PubMed Boolean queries via NCBI Entrez, pulls metadata,
 de-duplicates records, optionally cross-references an existing reference list,
 and writes a screening-ready CSV.
 """
 
 import argparse
 import csv
+import hashlib
+import json
+import platform
 import time
 import sys
-import ssl
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from collections import defaultdict
 
@@ -23,21 +26,11 @@ try:
     os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 except ImportError:
     pass
-# Also try the macOS-specific fix
-_ssl_cert_dir = "/etc/ssl/certs"
-_macos_cert = "/Library/Frameworks/Python.framework/Versions/3.12/etc/openssl/cert.pem"
-if not os.path.exists(_macos_cert):
-    try:
-        import subprocess
-        subprocess.run(
-            [sys.executable, "-m", "pip", "install", "--upgrade", "certifi"],
-            capture_output=True,
-        )
-    except Exception:
-        pass
 
 from Bio import Entrez, Medline
 import pandas as pd
+
+from csv_safety import spreadsheet_safe_dataframe
 
 # ── Configuration ──────────────────────────────────────────────────────────
 
@@ -267,8 +260,8 @@ def main():
     )
     parser.add_argument(
         "--output-dir",
-        default=str(Path(__file__).resolve().parent.parent / "data"),
-        help="Directory for screening_master.csv and harvest_log.txt outputs",
+        default=str(Path(__file__).resolve().parent.parent / "harvest_runs"),
+        help="Parent directory for a new timestamped, atomic harvest snapshot",
     )
     parser.add_argument(
         "--page-size",
@@ -278,11 +271,18 @@ def main():
     )
     args = parser.parse_args()
 
-    output_dir = Path(args.output_dir).resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
-    existing_refs_path = output_dir / "references_list.csv"
-    output_csv = output_dir / "screening_master.csv"
-    log_path = output_dir / "harvest_log.txt"
+    retrieved_at = datetime.now(timezone.utc)
+    run_id = retrieved_at.strftime("pubmed_%Y%m%dT%H%M%S%fZ")
+    output_parent = Path(args.output_dir).resolve()
+    output_parent.mkdir(parents=True, exist_ok=True)
+    temporary_dir = output_parent / f".{run_id}.tmp"
+    final_dir = output_parent / run_id
+    temporary_dir.mkdir()
+    existing_refs_path = output_parent / "references_list.csv"
+    output_csv = temporary_dir / "screening_master.csv"
+    raw_jsonl_path = temporary_dir / "screening_master.raw.jsonl"
+    log_path = temporary_dir / "harvest_log.txt"
+    manifest_path = temporary_dir / "harvest_manifest.json"
 
     print("=" * 70)
     print("PubMed Harvest Pipeline — AI in Urology and Andrology")
@@ -291,7 +291,7 @@ def main():
     print(f"Email: {args.email}")
     print(f"Domains: {len(DOMAIN_QUERIES)}")
     print(f"Pagination: uncapped retrieval in pages of {args.page_size}")
-    print(f"Output dir: {output_dir}")
+    print(f"Output snapshot: {final_dir}")
     print()
 
     # Load existing references for cross-referencing
@@ -310,8 +310,12 @@ def main():
         try:
             pmids, total_count = search_pubmed(query, args.email, page_size=args.page_size)
             domain_stats[domain] = {
+                "status": "COMPLETE",
+                "query": query,
+                "query_sha256": hashlib.sha256(query.encode("utf-8")).hexdigest(),
                 "total_count": total_count,
                 "retrieved": len(pmids),
+                "pmids": pmids,
             }
             for pmid in pmids:
                 pmid_domains[pmid].add(domain)
@@ -319,8 +323,31 @@ def main():
             print(f"  Total hits: {total_count}, Retrieved: {len(pmids)}")
             time.sleep(0.4)  # Rate limiting between searches
         except Exception as e:
-            print(f"  ERROR: {e}")
-            domain_stats[domain] = {"total_count": 0, "retrieved": 0}
+            print(f"  ERROR: {e}", file=sys.stderr)
+            domain_stats[domain] = {
+                "status": "FAILED",
+                "query": query,
+                "query_sha256": hashlib.sha256(query.encode("utf-8")).hexdigest(),
+                "error": str(e),
+                "total_count": None,
+                "retrieved": 0,
+                "pmids": [],
+            }
+
+    failed_queries = [domain for domain, stats in domain_stats.items() if stats["status"] != "COMPLETE"]
+    if failed_queries:
+        manifest_path.write_text(json.dumps({
+            "status": "FAILED_INCOMPLETE_QUERY_SET",
+            "retrieved_at_utc": retrieved_at.isoformat(),
+            "date_from": DATE_FROM,
+            "date_to": DATE_TO,
+            "failed_queries": failed_queries,
+            "queries": domain_stats,
+        }, indent=2) + "\n", encoding="utf-8")
+        failed_dir = output_parent / f"{run_id}-FAILED"
+        os.replace(temporary_dir, failed_dir)
+        print(f"Harvest failed; diagnostic snapshot: {failed_dir}", file=sys.stderr)
+        return 1
 
     print()
     print(f"Total unique PMIDs across all domains: {len(all_pmids)}")
@@ -332,6 +359,19 @@ def main():
     all_records = fetch_metadata(pmid_list, args.email)
     print(f"  Fetched metadata for {len(all_records)} records")
     print()
+    fetched_pmids = {record.get("PMID", "") for record in all_records}
+    missing_metadata = sorted(set(pmid_list) - fetched_pmids, key=int)
+    if missing_metadata:
+        manifest_path.write_text(json.dumps({
+            "status": "FAILED_INCOMPLETE_METADATA",
+            "retrieved_at_utc": retrieved_at.isoformat(),
+            "missing_pmids": missing_metadata,
+            "queries": domain_stats,
+        }, indent=2) + "\n", encoding="utf-8")
+        failed_dir = output_parent / f"{run_id}-FAILED"
+        os.replace(temporary_dir, failed_dir)
+        print(f"Metadata retrieval was incomplete; diagnostic snapshot: {failed_dir}", file=sys.stderr)
+        return 1
 
     # Parse and enrich records
     print("Parsing and enriching records...")
@@ -390,15 +430,21 @@ def main():
             "Final_Decision", "Exclusion_Reason",
         ]
         df_out = pd.DataFrame(rows, columns=fieldnames)
-        df_out.to_csv(output_csv, index=False, quoting=csv.QUOTE_ALL)
+        # JSONL is the canonical, unmodified provenance record. The CSV is a
+        # spreadsheet-facing view with formula-like text cells neutralized.
+        df_out.to_json(raw_jsonl_path, orient="records", lines=True, force_ascii=False)
+        safe_df, csv_safety = spreadsheet_safe_dataframe(df_out)
+        safe_df.to_csv(output_csv, index=False, quoting=csv.QUOTE_ALL)
         print(f"Written {len(rows)} records to {output_csv}")
+        print(f"Canonical raw records written to {raw_jsonl_path}")
+        print(f"Spreadsheet-safety escapes applied: {csv_safety['escaped_cells']}")
     else:
         print("WARNING: No records found!")
 
     # Write harvest log
     with open(log_path, "w") as f:
         f.write("PubMed Harvest Log\n")
-        f.write(f"Date: 2026-04-04\n")
+        f.write(f"Retrieved at UTC: {retrieved_at.isoformat()}\n")
         f.write(f"Date range: {DATE_FROM} to {DATE_TO}\n")
         f.write(f"Total unique PMIDs: {len(all_pmids)}\n")
         f.write(f"Metadata fetched: {len(all_records)}\n\n")
@@ -423,6 +469,37 @@ def main():
         f.write(f"  Already in prior reference set: {already_in_reference_set}\n")
         f.write(f"  New (not in collection): {len(rows) - already_collected}\n")
 
+    try:
+        import Bio
+        import certifi
+        dependency_versions = {"biopython": Bio.__version__, "pandas": pd.__version__, "certifi": certifi.__version__}
+    except Exception:
+        dependency_versions = {"biopython": "unknown", "pandas": pd.__version__, "certifi": "unknown"}
+    manifest = {
+        "status": "COMPLETE",
+        "retrieved_at_utc": retrieved_at.isoformat(),
+        "date_from": DATE_FROM,
+        "date_to": DATE_TO,
+        "page_size": args.page_size,
+        "total_query_hits": sum(int(stats["total_count"]) for stats in domain_stats.values()),
+        "unique_pmids": len(all_pmids),
+        "metadata_rows": len(rows),
+        "queries": domain_stats,
+        "environment": {
+            "python": sys.version,
+            "platform": platform.platform(),
+            "dependencies": dependency_versions,
+        },
+        "outputs": {
+            "screening_master.csv": {"sha256": hashlib.sha256(output_csv.read_bytes()).hexdigest(), "rows": len(rows)},
+            "screening_master.raw.jsonl": {"sha256": hashlib.sha256(raw_jsonl_path.read_bytes()).hexdigest(), "rows": len(rows)},
+            "harvest_log.txt": {"sha256": hashlib.sha256(log_path.read_bytes()).hexdigest()},
+        },
+        "csv_safety": csv_safety,
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary_dir, final_dir)
+
     print(f"Written harvest log to {log_path}")
 
     # Summary
@@ -438,11 +515,12 @@ def main():
     print(f"  Already in reference set:  {already_in_reference_set}")
     print(f"  New records to screen:     {len(rows) - already_collected}")
     print()
-    print(f"Output: {output_csv}")
-    print(f"Log:    {log_path}")
+    print(f"Output: {final_dir / output_csv.name}")
+    print(f"Log:    {final_dir / log_path.name}")
     print()
     print("Next step: Run ai_screening.py to perform AI-assisted screening")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

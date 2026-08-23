@@ -8,16 +8,27 @@ inclusion and exclusion criteria.
 
 import argparse
 import csv
+import hashlib
 import json
 import subprocess
 import tempfile
 import time
 import sys
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-from anthropic import Anthropic
+
+try:
+    from anthropic import Anthropic
+except ImportError:  # Loaded only when the Anthropic backend is selected.
+    Anthropic = None
+
+from csv_safety import spreadsheet_safe_dataframe
+
+ANTHROPIC_MODEL = "claude-sonnet-4-20250514"
+MAX_TOKENS = 4096
 
 # ── Screening criteria (from the Methods section) ──────────────────────────
 
@@ -107,8 +118,8 @@ def screen_batch(client: Anthropic, records_text: str, n: int) -> list[dict]:
     user_msg = BATCH_USER_TEMPLATE.format(n=n, records=records_text)
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=4096,
+        model=ANTHROPIC_MODEL,
+        max_tokens=MAX_TOKENS,
         system=SCREENING_PROMPT,
         messages=[{"role": "user", "content": user_msg}],
     )
@@ -135,9 +146,7 @@ def screen_batch(client: Anthropic, records_text: str, n: int) -> list[dict]:
         match = re.search(r'\[.*\]', text, re.DOTALL)
         if match:
             return json.loads(match.group())
-        return [{"decision": "UNCERTAIN", "confidence": "low",
-                 "inclusion_criteria_met": [], "exclusion_criteria_met": [],
-                 "reasoning": "Failed to parse AI response"} for _ in range(n)]
+        raise RuntimeError("Model response was not valid JSON")
 
 
 def screen_batch_codex(records_text: str, n: int) -> list[dict]:
@@ -186,9 +195,7 @@ def screen_batch_codex(records_text: str, n: int) -> list[dict]:
             results = [results]
         return results
     except Exception as exc:
-        return [{"decision": "UNCERTAIN", "confidence": "low",
-                 "inclusion_criteria_met": [], "exclusion_criteria_met": [],
-                 "reasoning": f"Failed codex screening: {str(exc)[:120]}"} for _ in range(n)]
+        raise RuntimeError(f"Codex screening failed: {str(exc)[:240]}") from exc
     finally:
         try:
             os.unlink(output_file)
@@ -210,6 +217,116 @@ def normalize_confidence(value: str) -> str:
     return "low"
 
 
+def validate_results(results: object, expected_count: int) -> list[dict]:
+    """Reject incomplete or malformed batches instead of converting errors to uncertainty."""
+    if not isinstance(results, list) or len(results) != expected_count:
+        raise RuntimeError(f"Expected {expected_count} result objects; received {len(results) if isinstance(results, list) else type(results).__name__}")
+    required = {"decision", "confidence", "inclusion_criteria_met", "exclusion_criteria_met", "reasoning"}
+    validated = []
+    for position, result in enumerate(results, start=1):
+        if not isinstance(result, dict) or not required.issubset(result):
+            raise RuntimeError(f"Result {position} does not match the required schema")
+        if normalize_decision(result["decision"]) != str(result["decision"]).strip().upper():
+            raise RuntimeError(f"Result {position} has an invalid decision")
+        if normalize_confidence(result["confidence"]) != str(result["confidence"]).strip().lower():
+            raise RuntimeError(f"Result {position} has invalid confidence")
+        if not isinstance(result["inclusion_criteria_met"], list) or not isinstance(result["exclusion_criteria_met"], list):
+            raise RuntimeError(f"Result {position} criterion fields are not lists")
+        validated.append(result)
+    return validated
+
+
+def atomic_write_dataframe(df: pd.DataFrame, path: Path) -> dict:
+    """Write canonical raw JSONL and a formula-neutralized spreadsheet CSV."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    raw_path = path.with_suffix(path.suffix + ".raw.jsonl")
+    safe_df, safety_report = spreadsheet_safe_dataframe(df)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
+    os.close(descriptor)
+    temporary = Path(temporary_name)
+    raw_descriptor, raw_temporary_name = tempfile.mkstemp(prefix=raw_path.name + ".", suffix=".tmp", dir=path.parent)
+    os.close(raw_descriptor)
+    raw_temporary = Path(raw_temporary_name)
+    try:
+        df.to_json(raw_temporary, orient="records", lines=True, force_ascii=False)
+        safe_df.to_csv(temporary, index=False, quoting=csv.QUOTE_ALL)
+        os.replace(raw_temporary, raw_path)
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+        raw_temporary.unlink(missing_ok=True)
+    return {
+        **safety_report,
+        "canonical_raw_path": str(raw_path),
+        "canonical_raw_sha256": hashlib.sha256(raw_path.read_bytes()).hexdigest(),
+    }
+
+
+def atomic_write_json(payload: dict, path: Path) -> None:
+    descriptor, temporary_name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
+    os.close(descriptor)
+    temporary = Path(temporary_name)
+    try:
+        temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _cell_text(value) -> str:
+    """Normalize scalar table values for raw-JSONL/safe-CSV parity checks."""
+    if value is None or (not isinstance(value, (list, dict)) and pd.isna(value)):
+        return ""
+    return str(value)
+
+
+def load_screening_input(input_path: Path) -> tuple[pd.DataFrame, Path | None]:
+    """Prefer and verify the harvester's canonical raw JSONL companion.
+
+    The CSV is a spreadsheet-safe view and may contain protective apostrophes.
+    When a raw companion exists, this function proves that neutralizing the raw
+    records reproduces that CSV view before returning the unmodified records.
+    """
+    safe_view = pd.read_csv(input_path, dtype="object", keep_default_na=False)
+    candidates = (
+        input_path.with_suffix(".raw.jsonl"),
+        input_path.with_suffix(input_path.suffix + ".raw.jsonl"),
+    )
+    raw_path = next((candidate for candidate in candidates if candidate.is_file()), None)
+    if raw_path is None:
+        return safe_view, None
+
+    records = [
+        json.loads(line)
+        for line in raw_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    raw_view = pd.DataFrame(records)
+    if list(raw_view.columns) != list(safe_view.columns) or len(raw_view) != len(safe_view):
+        raise RuntimeError(
+            "Canonical raw JSONL and spreadsheet CSV have different columns or row counts"
+        )
+    if "PMID" in raw_view.columns:
+        raw_pmids = [_cell_text(value) for value in raw_view["PMID"]]
+        csv_pmids = [_cell_text(value) for value in safe_view["PMID"]]
+        if raw_pmids != csv_pmids or len(raw_pmids) != len(set(raw_pmids)):
+            raise RuntimeError("Canonical raw JSONL and spreadsheet CSV PMID keys do not agree")
+
+    reconstructed_safe, _ = spreadsheet_safe_dataframe(raw_view)
+    mismatches = []
+    for column in safe_view.columns:
+        raw_values = [_cell_text(value) for value in reconstructed_safe[column]]
+        csv_values = [_cell_text(value) for value in safe_view[column]]
+        if raw_values != csv_values:
+            mismatches.append(str(column))
+    if mismatches:
+        raise RuntimeError(
+            "Canonical raw JSONL does not reproduce the spreadsheet-safe CSV view; "
+            f"mismatched columns={mismatches}"
+        )
+    return raw_view, raw_path
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="AI-assisted screening of PubMed records"
@@ -221,26 +338,44 @@ def main():
     parser.add_argument("--input", default="../data/screening_master.csv",
                         help="Input CSV from pubmed_harvest.py")
     parser.add_argument("--output", default="",
-                        help="Output CSV path (default: overwrite the input CSV)")
+                        help="Output CSV path (default: a new *_screened.csv file)")
+    parser.add_argument("--allow-in-place", action="store_true",
+                        help="Explicitly permit overwriting the input path")
+    parser.add_argument(
+        "--allow-csv-only-input",
+        action="store_true",
+        help="Permit a legacy CSV without its canonical raw JSONL companion",
+    )
     parser.add_argument("--backend", choices=["anthropic", "codex"], default="anthropic",
                         help="Screening backend to use")
+    parser.add_argument("--allow-unpinned-codex", action="store_true",
+                        help="Acknowledge that the optional local Codex CLI backend is not a pinned production backend")
     args = parser.parse_args()
 
     input_path = Path(args.input)
     if not input_path.is_absolute():
         input_path = Path(__file__).parent / input_path
 
-    output_path = Path(args.output) if args.output else input_path
+    output_path = Path(args.output) if args.output else input_path.with_name(f"{input_path.stem}_screened{input_path.suffix}")
     if not output_path.is_absolute():
         output_path = Path(__file__).parent / output_path
     output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path.resolve() == input_path.resolve() and not args.allow_in_place:
+        raise SystemExit("Refusing to overwrite the input. Use a separate --output path or pass --allow-in-place explicitly.")
+    if args.backend == "codex" and not args.allow_unpinned_codex:
+        raise SystemExit("The Codex CLI backend is optional and unpinned. Pass --allow-unpinned-codex to use it explicitly.")
 
     print("=" * 70)
     print("AI-Assisted Screening — AI in Urology and Andrology")
     print("=" * 70)
 
     # Load data
-    df = pd.read_csv(input_path)
+    df, canonical_raw_input = load_screening_input(input_path)
+    if canonical_raw_input is None and not args.allow_csv_only_input:
+        raise SystemExit(
+            "Canonical raw JSONL companion is missing. Restore the harvester output or pass "
+            "--allow-csv-only-input for an explicitly provenance-limited legacy run."
+        )
     for col in [
         "AI_Decision",
         "AI_Reasoning",
@@ -249,11 +384,18 @@ def main():
         "Human_Reasoning",
         "Final_Decision",
         "Exclusion_Reason",
+        "AI_Processing_Status",
+        "AI_Error",
     ]:
         if col in df.columns:
             df[col] = df[col].astype("object")
     total = len(df)
     print(f"Loaded {total} records from {input_path}")
+    print(
+        f"Canonical input: {canonical_raw_input}"
+        if canonical_raw_input is not None
+        else "Canonical input: legacy CSV-only override"
+    )
 
     # Find records that haven't been screened yet
     unscreened = df[df["AI_Decision"].isna() | (df["AI_Decision"] == "")]
@@ -273,6 +415,10 @@ def main():
         raise SystemExit(
             "Anthropic authentication missing. Set ANTHROPIC_API_KEY "
             "or ANTHROPIC_AUTH_TOKEN before running ai_screening.py."
+        )
+    if args.backend == "anthropic" and Anthropic is None:
+        raise SystemExit(
+            "The Anthropic backend requires the 'anthropic' package from requirements.txt."
         )
 
     # Initialize Anthropic client
@@ -310,6 +456,8 @@ def main():
             else:
                 results = screen_batch(client, records_text, n)
 
+            results = validate_results(results, n)
+
             # Apply results
             for i, (idx, _) in enumerate(batch_df.iterrows()):
                 if i < len(results):
@@ -319,6 +467,8 @@ def main():
                     df.at[idx, "AI_Decision"] = decision
                     df.at[idx, "AI_Reasoning"] = r.get("reasoning", "")
                     df.at[idx, "AI_Confidence"] = confidence
+                    df.at[idx, "AI_Processing_Status"] = "COMPLETE"
+                    df.at[idx, "AI_Error"] = ""
 
                     if decision == "INCLUDE":
                         includes += 1
@@ -338,25 +488,66 @@ def main():
             )
 
             # Save progress after each batch
-            df.to_csv(output_path, index=False, quoting=csv.QUOTE_ALL)
+            atomic_write_dataframe(df, output_path)
 
             # Rate limiting
             time.sleep(0.5)
 
         except Exception as e:
-            print(f"  ERROR on batch starting at {batch_start}: {e}")
-            # Mark batch as uncertain
+            print(f"  ERROR on batch starting at {batch_start}: {e}", file=sys.stderr)
+            # Operational errors remain retryable and are never converted into
+            # scientific UNCERTAIN decisions.
             for idx, _ in batch_df.iterrows():
-                df.at[idx, "AI_Decision"] = "UNCERTAIN"
-                df.at[idx, "AI_Reasoning"] = f"Error: {str(e)[:100]}"
-                df.at[idx, "AI_Confidence"] = "low"
-                uncertains += 1
-            processed += n
-            df.to_csv(output_path, index=False, quoting=csv.QUOTE_ALL)
-            time.sleep(2)
+                df.at[idx, "AI_Processing_Status"] = "ERROR_RETRY"
+                df.at[idx, "AI_Error"] = str(e)[:500]
+            csv_safety = atomic_write_dataframe(df, output_path)
+            atomic_write_json({
+                "status": "FAILED_RETRY_REQUIRED",
+                "failed_batch_start": batch_start,
+                "error": str(e),
+                "backend": args.backend,
+                "model": ANTHROPIC_MODEL if args.backend == "anthropic" else "local-codex-cli-unpinned",
+                "batch_size": batch_size,
+                "max_tokens": MAX_TOKENS if args.backend == "anthropic" else None,
+                "temperature": "not explicitly set",
+                "prompt_sha256": hashlib.sha256(SCREENING_PROMPT.encode()).hexdigest(),
+                "input_sha256": hashlib.sha256(input_path.read_bytes()).hexdigest(),
+                "canonical_raw_input": str(canonical_raw_input) if canonical_raw_input else None,
+                "canonical_raw_input_sha256": (
+                    hashlib.sha256(canonical_raw_input.read_bytes()).hexdigest()
+                    if canonical_raw_input
+                    else None
+                ),
+                "updated_at_utc": datetime.now(timezone.utc).isoformat(),
+                "csv_safety": csv_safety,
+            }, output_path.with_suffix(output_path.suffix + ".run.json"))
+            return 1
 
     # Final save
-    df.to_csv(output_path, index=False, quoting=csv.QUOTE_ALL)
+    csv_safety = atomic_write_dataframe(df, output_path)
+    backend_version = None
+    if args.backend == "codex":
+        backend_version = subprocess.run(["codex", "--version"], capture_output=True, text=True, check=False).stdout.strip() or None
+    atomic_write_json({
+        "status": "COMPLETE",
+        "backend": args.backend,
+        "model": ANTHROPIC_MODEL if args.backend == "anthropic" else "local-codex-cli-unpinned",
+        "backend_version": backend_version,
+        "batch_size": batch_size,
+        "max_tokens": MAX_TOKENS if args.backend == "anthropic" else None,
+        "temperature": "not explicitly set",
+        "prompt_sha256": hashlib.sha256(SCREENING_PROMPT.encode()).hexdigest(),
+        "input_sha256": hashlib.sha256(input_path.read_bytes()).hexdigest(),
+        "canonical_raw_input": str(canonical_raw_input) if canonical_raw_input else None,
+        "canonical_raw_input_sha256": (
+            hashlib.sha256(canonical_raw_input.read_bytes()).hexdigest()
+            if canonical_raw_input
+            else None
+        ),
+        "output_sha256": hashlib.sha256(output_path.read_bytes()).hexdigest(),
+        "csv_safety": csv_safety,
+        "completed_at_utc": datetime.now(timezone.utc).isoformat(),
+    }, output_path.with_suffix(output_path.suffix + ".run.json"))
 
     # Summary
     print()
@@ -381,10 +572,12 @@ def main():
     print(f"Output saved to: {output_path}")
     print()
     print("Next steps:")
-    print("  1. Run screening_analysis.py for PRISMA flow numbers")
-    print("  2. Have MDs review INCLUDE + UNCERTAIN records")
-    print("  3. Have MDs verify 20% random sample of EXCLUDE records")
+    print("  1. Review the output using the documented human-adjudication workflow")
+    print("  2. Have clinician reviewers adjudicate INCLUDE + UNCERTAIN records")
+    print("  3. Audit an author-defined sample of EXCLUDE records")
+    print("  Historical PRISMA decisions are not regenerated by this script.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

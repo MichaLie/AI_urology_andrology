@@ -1,32 +1,38 @@
 Metric_Key,Metric_Label,Value
-pubmed_hits_across_queries,PubMed hits across queries,8941
-query_union_unique_records,Unique records after deduplication,7264
-pre_screen_relevance_exclusions,Prescreen relevance exclusions,1341
-unique_records_screened,Records screened,5923
-ai_include,AI include,3331
-ai_exclude,AI exclude,2202
-ai_uncertain,AI uncertain,390
-human_dual_review_rows,Dual human review rows,648
-human_dual_review_retained,Dual human review retained,368
-human_dual_review_excluded,Dual human review excluded,280
-human_exclude_audit_rows,AI-exclude audit rows,439
-human_exclude_audit_overturned,AI-exclude audit overturned,9
-human_exclude_audit_confirmed_exclude,AI-exclude audit confirmed exclude,430
+pubmed_hits_across_queries,PubMed hits returned across 20 prespecified queries,8941
+query_union_unique_records,Unique records after cross-query deduplication,7264
+prescreen_relevance_exclusions,Records removed by the prescreen relevance filter,1341
+records_screened,Records entering title and abstract screening,5923
+ai_first_pass_include,AI-assisted first-pass Include,3331
+ai_first_pass_exclude,AI-assisted first-pass Exclude,2202
+ai_first_pass_uncertain,AI-assisted first-pass Uncertain,390
+dual_human_review_rows,Records receiving dual human review,648
+dual_human_review_retained,Dual-review records retained,368
+dual_human_review_excluded,Dual-review records excluded,280
+ai_exclude_audit_rows,AI-exclude records sampled for human verification,439
+ai_exclude_audit_overturned,Sampled AI-exclude records retained after verification,9
+ai_exclude_audit_confirmed,Sampled AI-exclude records confirmed excluded,430
 ai_only_include_population,AI-only Include population,3073
-ai_only_include_audit_rows,AI-only Include audit rows,305
-retained_before_ai_only_include_audit_exclusions,Retained after consensus and AI-exclude audit correction before AI-only Include audit exclusions,3450
-ai_only_include_audit_exclusions_applied,AI-only Include audit exclusions applied,27
-included_before_final_cleanup,Included before final file-level cleanup after audit correction,3423
+ai_only_include_sample,AI-only Include records sampled for abstract verification,305
+ai_only_include_sample_retained,Sampled AI-only Include records confirmed eligible,278
+ai_only_include_sample_excluded,Sampled AI-only Include records excluded,27
+records_before_ai_only_sample_exclusions,Records retained after consensus and AI-exclude verification,3450
+records_after_screening_verification,Records retained after screening verification,3423
 preprints_removed,Preprints removed,19
-stone_scope_removed,Stone-scope records removed,9
-non_urology_documentation_removed,Non-urology ambient-documentation records removed,2
-other_scope_removed,Other non-urological or nonclinical records removed,13
-residual_out_of_scope_removed,Residual out-of-scope records removed,24
-retracted_publications_removed,Retracted publications removed,3
-errata_corrections_removed,Errata/correction notices removed,3
-conference_proceedings_removed,Conference/proceedings records removed,11
-publication_type_cleanup_removed,Publication-type cleanup records removed,17
-duplicate_or_near_duplicate_removed,Duplicate or near-duplicate records removed,11
-final_file_level_cleanup_removed,Final file-level cleanup records removed,71
-final_included_records,Final included record set,3352
-ai_only_include_audit_confirmed_includes,AI-only Include audit confirmed includes,278
+residual_scope_records_removed,Residual out-of-scope records removed,24
+publication_type_records_removed,Ineligible publication types removed,17
+duplicate_records_removed,Duplicate or near-duplicate records removed,11
+records_before_final_eligibility_verification,Records before final eligibility verification,3352
+eligibility_candidates_initial_rules,Records flagged by the initial eligibility sensitivity rules,1190
+eligibility_candidates_second_pass,Additional records flagged by strengthened boundary rules,16
+eligibility_candidates_renal_boundary_pass,Additional records flagged by the renal and nephrology boundary pass,35
+eligibility_candidates_language_boundary_pass,Additional records flagged by final PubMed language-metadata verification,27
+eligibility_candidates_case_report_boundary_pass,Additional records verified by final case-report boundary check,2
+eligibility_candidates_flagged,Records receiving final record-level eligibility verification,1270
+eligibility_candidates_not_flagged,Records not included in final record-level eligibility verification,2082
+eligibility_candidates_confirmed_include,Verified records confirmed eligible,797
+eligibility_candidates_operational_analysis_group_corrected,Verified records retained with operational-analysis-group correction,13
+eligibility_candidates_context_only,Verified records retained for narrative context only,106
+eligibility_candidates_excluded,Verified records excluded,354
+eligibility_records_removed_from_analytic_set,Records removed from the analytic set after final eligibility verification,460
+final_analytic_corpus,Final analytic corpus,2892

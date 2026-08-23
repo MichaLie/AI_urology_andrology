@@ -1,8 +1,9 @@
 cff-version: 1.2.0
-message: "If you use this dataset or code, please cite the archived release and the associated article."
+message: "Please cite the version-specific archived release and the associated article when using these data or scripts."
+type: software
 title: "AI in urology and andrology clinical-readiness evidence map"
-doi: "10.5281/zenodo.21127985"
-url: "https://doi.org/10.5281/zenodo.21127985"
+version: "1.3.0"
+license: "CC-BY-4.0"
 authors:
   - family-names: "Liegertová"
     given-names: "Michaela"
@@ -16,6 +17,19 @@ authors:
   - family-names: "Broul"
     given-names: "Marek"
     orcid: "https://orcid.org/0000-0002-5652-1652"
-version: "1.2.2"
-date-released: "2026-07-02"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.22064417"
+    description: "Version-specific Zenodo DOI for v1.3.0"
+  - type: doi
+    value: "10.5281/zenodo.20389926"
+    description: "All-versions Zenodo concept DOI"
 repository-code: "https://github.com/MichaLie/AI_urology_andrology"
+url: "https://github.com/MichaLie/AI_urology_andrology/tree/v1.3.0"
+keywords:
+  - artificial intelligence
+  - urology
+  - andrology
+  - scoping review
+  - evidence map
+  - clinical readiness

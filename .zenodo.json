@@ -1,0 +1,42 @@
+{
+  "upload_type": "software",
+  "title": "AI in urology and andrology clinical-readiness evidence map",
+  "version": "v1.3.0",
+  "doi": "10.5281/zenodo.22064417",
+  "license": "cc-by-4.0",
+  "description": "<p>Versioned data and code release for the PubMed-indexed clinical-readiness evidence map of artificial intelligence in urology and andrology.</p><p>This release contains the final 2,892-record analytic corpus, the complete 1,270-record eligibility-verification table with triggering rule identifiers, evidence levels and record-specific rationales, 38 in-corpus readiness anchors, eight separately labelled extracorpus contextual exemplars, five source-data tables, and deterministic code for rebuilding all five figures.</p>",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Liegertová, Michaela",
+      "orcid": "0000-0003-3858-856X"
+    },
+    {
+      "name": "Hujová, Aneta",
+      "orcid": "0000-0003-3773-2902"
+    },
+    {
+      "name": "Vostrý, Michal",
+      "orcid": "0000-0003-4749-3095"
+    },
+    {
+      "name": "Broul, Marek",
+      "orcid": "0000-0002-5652-1652"
+    }
+  ],
+  "keywords": [
+    "artificial intelligence",
+    "urology",
+    "andrology",
+    "scoping review",
+    "evidence map",
+    "clinical readiness"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/MichaLie/AI_urology_andrology/tree/v1.3.0",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}

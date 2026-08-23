@@ -2,6 +2,13 @@ __pycache__/
 .DS_Store
 ._*
 .venv/
+.env
+.env.*
+.secrets
+.secrets.*
+harvest_runs/
+*.run.json
+*.raw.jsonl
 figures/
 data/publication_trends_by_domain.csv
 data/review_burden_by_domain.csv
