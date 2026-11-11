@@ -1,5 +1,9 @@
 # AI in urology and andrology clinical-readiness evidence map
 
+> **Published; repository archived 11 November 2026.** Liegertová M, Hujová A, Vostrý M, Broul M. Clinical readiness of artificial intelligence in urology and andrology: a PubMed-indexed scoping review and evidence map. *Ther Adv Urol*. 2026;18. https://doi.org/10.1177/17562872261496667
+>
+> The repository is read-only and stays at this address, as cited in the article's data availability statement. Archived release v1.3.0: https://doi.org/10.5281/zenodo.22064417
+
 This repository contains the locked data tables, source data, and Python scripts accompanying the manuscript:
 
 > Clinical readiness of artificial intelligence in urology and andrology: a PubMed-indexed scoping review and evidence map
